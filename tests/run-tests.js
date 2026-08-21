@@ -21,6 +21,19 @@ const x=E.calculateAdditionMass({meltMassG:M,currentFraction:C0,targetFraction:C
 const C1=E.calculateFinalConcentration({meltMassG:M,currentFraction:C0,additionMassG:x,additiveFraction:P,yieldFraction:Y});
 near(E.fractionToConcentration(C1,'ppm'),'50',1e-20,'addition round trip');
 
+// Ver.1.0.3 sample: 1900 kg, Cu 0.1 ppm -> 0.5 wt%, Cu 99.999 wt%, Y=100%, 1 g balance
+const M103=E.massToGram('1900','kg');
+const C0103=E.concentrationToFraction('0.1','ppm');
+const Ct103=E.concentrationToFraction('0.5','wt%');
+const P103=E.percentToFraction('99.999');
+const Y103=E.percentToFraction('100');
+const x103=E.calculateAdditionMass({meltMassG:M103,currentFraction:C0103,targetFraction:Ct103,additiveFraction:P103,yieldFraction:Y103});
+near(x103,'9547.6436949115',1e-9,'v1.0.3 sample theoretical addition');
+const xr103=D.from(x103).quantize('1','half-up');
+eq(xr103,'9548','v1.0.3 sample 1 g rounding');
+const C1103=E.calculateFinalConcentration({meltMassG:M103,currentFraction:C0103,additionMassG:xr103,additiveFraction:P103,yieldFraction:Y103});
+near(E.fractionToConcentration(C1103,'wt%'),'0.5000185656500911',1e-12,'v1.0.3 sample rounded final concentration');
+
 // yield round trip
 const Yr=E.calculateYield({meltMassG:M,currentFraction:C0,finalFraction:C1,additionMassG:x,additiveFraction:P});
 near(Yr,'0.95',1e-20,'yield round trip');

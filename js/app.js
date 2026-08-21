@@ -30,6 +30,21 @@ function fmtMassByScale(g,resolutionG,unit='auto'){
   const step=E.gramToMass(resolutionG,o.unit);
   return `${o.value.toFixed(decimalPlacesForStep(step))} ${o.unit}`;
 }
+function fmtMassInUnit(g,unit,dp=getDecimals().melt){return `${E.gramToMass(g,unit).toFixed(dp)} ${unit}`}
+function calcNum(v,sig=12){
+  const n=Number(D.from(v).toString());
+  if(!Number.isFinite(n))return D.from(v).toString();
+  if(n===0)return '0';
+  const a=Math.abs(n);
+  if(a>=1e9||a<1e-8)return n.toExponential(Math.min(sig-1,10)).replace(/\.0+e/,'e').replace(/(\.\d*?[1-9])0+e/,'$1e');
+  const digits=Math.max(0,Math.min(12,sig-1-Math.floor(Math.log10(a))));
+  return n.toFixed(digits).replace(/\.?0+$/,'');
+}
+function calcMassG(v){return `${calcNum(v,11)} g`}
+function formulaMassInUnit(g,unit){return `${calcNum(E.gramToMass(g,unit),12)} ${unit}`}
+function formulaConc(frac,unit,sig=11){return `${calcNum(E.fractionToConcentration(frac,unit),sig)} ${unit}`}
+function formulaYield(frac){return `${calcNum(D.from(frac).mul(100),9)} %`}
+
 function roundingLabel(mode){return mode==='ceil'?'切り上げ':mode==='floor'?'切り捨て':'四捨五入'}
 function fmtConc(frac,unit){const dp=unit==='ppm'?getDecimals().ppm:unit==='ppb'?getDecimals().ppb:getDecimals().wt;return `${E.fractionToConcentration(frac,unit).toFixed(dp)} ${unit}`}
 function fmtYield(frac){return `${D.from(frac).mul(100).toFixed(getDecimals().yield)} %`}
@@ -131,7 +146,7 @@ async function calcBlend(){
     const preferred=batch.rows.map(r=>r.theoreticalMassG.quantize(res,mode));
     const recommendedFinal=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:preferred});
     const totalPreferred=preferred.reduce((s,x)=>s.add(x),D.zero());const finalMass=M.add(totalPreferred);
-    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res);byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res);
+    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res);byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res,byId('blendMeltUnit').value);
     batch.rows.forEach((r,i)=>{
       const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['四捨五入',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
       const unique=[];const seen=new Set();for(const [name,mass] of candidates){if(seen.has(mass.toString()))continue;seen.add(mass.toString());const ms=preferred.slice();ms[i]=mass;const fin=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:ms})[i];unique.push({name,mass,fin});}
@@ -143,7 +158,7 @@ async function calcBlend(){
         <div class="scenario-list" style="grid-column:1/-1"><strong>秤量候補</strong>${unique.map(u=>`<div class="${u.mass.eq(preferred[i])?'preferred':''}"><span>${u.name}: ${fmtMassByScale(u.mass,res)}</span><span>${fmtConc(u.fin,unit)}</span></div>`).join('')}</div>`;
     });
     state.lastBlend={M,rows:batch.rows,preferred,recommendedFinal,totalPreferred,finalMass,theoreticalTotalAddition:batch.totalAdditionG,scale,mode,at:new Date().toISOString()};
-    byId('saveBlendHistory').disabled=false;setMessage(msg,'計算完了。推奨秤量値は天秤分解能を反映しています。','success');renderBlendDetail();
+    byId('saveBlendHistory').disabled=false;setMessage(msg,'計算完了','success');renderBlendDetail();
   }catch(e){state.lastBlend=null;byId('saveBlendHistory').disabled=true;setMessage(msg,e.message,'error')}
 }
 function renderBlendDetail(){
@@ -151,23 +166,92 @@ function renderBlendDetail(){
   const p=byId('blendDetailPanel');p.classList.remove('hidden');
   const disclosure=byId('blendDetailDisclosure');if(disclosure)disclosure.open=false;
   const res=D.from(r.scale.resolutionG);const roundedTotal=r.totalPreferred;
-  const sumA=r.rows.reduce((sum,x)=>sum.add(x.a),D.zero());
-  const sumB=r.rows.reduce((sum,x)=>sum.add(x.b),D.zero());
-  const general=`Cₜᵢ = (M·C₀ᵢ + xᵢ·Pᵢ·Yᵢ) / (M + Σxⱼ)\n\naᵢ = M·(Cₜᵢ − C₀ᵢ) / (Pᵢ·Yᵢ)\nbᵢ = Cₜᵢ / (Pᵢ·Yᵢ)\nS = Σxᵢ = Σaᵢ / (1 − Σbᵢ)\nxᵢ = aᵢ + bᵢ·S`;
-  const blocks=r.rows.map((x,i)=>{
-    const rounded=r.preferred[i];const fin=r.recommendedFinal[i];const unit=x.targetUnit;
-    const eq=`a = ${r.M.toString()} × (${x.Ct.toString()} − ${x.C0.toString()}) / (${x.P.toString()} × ${x.Y.toString()}) = ${x.a.toString()} g\nb = ${x.Ct.toString()} / (${x.P.toString()} × ${x.Y.toString()}) = ${x.b.toString()}\nx = a + b × S = ${x.theoreticalMassG.toString()} g\n${roundingLabel(r.mode)}(${r.scale.resolutionG} g) → ${rounded.toString()} g\nC₁ = (${r.M.toString()} × ${x.C0.toString()} + ${rounded.toString()} × ${x.P.toString()} × ${x.Y.toString()}) / (${r.M.toString()} + ${roundedTotal.toString()})\n   = ${E.fractionToConcentration(fin,unit).toString()} ${unit}`;
-    return `<div class="formula-block"><h3>${esc(x.element)}</h3><div class="formula-values"><div>現在濃度: ${fmtConc(x.C0,x.currentUnit)}</div><div>目標濃度: ${fmtConc(x.Ct,unit)}</div><div>添加材含有率: ${D.from(x.P).mul(100).toString()} wt%</div><div>歩留まり: ${fmtYield(x.Y)}</div><div>理論添加量: ${fmtMass(x.theoreticalMassG)}</div><div>推奨秤量値: ${fmtMassByScale(rounded,res)}</div></div><div class="formula-equation">${esc(eq)}</div></div>`;
-  }).join('');
-  byId('blendDetail').innerHTML=`<p class="formula-lead"><strong>標準モデルA</strong>：添加材全量を最終総重量へ加算し、目的元素として有効になる量のみ歩留まり補正します。複数元素では、全添加材による共通の総重量増加を連立で考慮します。</p><div class="formula-block"><h3>使用する式</h3><div class="formula-equation">${esc(general)}</div><div class="formula-values"><div>M = ${r.M.toString()} g</div><div>Σa = ${sumA.toString()} g</div><div>Σb = ${sumB.toString()}</div><div>S = ${r.theoreticalTotalAddition.toString()} g</div><div>天秤分解能 = ${esc(r.scale.resolutionG)} g</div><div>丸め方式 = ${roundingLabel(r.mode)}</div></div><div class="formula-note">濃度は計算内部では質量分率に変換し、中間計算では丸めません。秤量値だけを選択した天秤分解能で量子化し、その値から最終濃度を再計算します。</div></div>${blocks}`;
+  const meltUnit=byId('blendMeltUnit').value;
+  const multiSymbols=r.rows.length>1?`
+      <div><strong>S</strong><span>全元素の総添加量（Σx）</span></div>
+      <div><strong>aᵢ</strong><span>元素 i の濃度差から求める中間質量項</span></div>
+      <div><strong>bᵢ</strong><span>元素 i の総重量増加補正係数</span></div>
+      <div><strong>Σ</strong><span>全元素について合計する記号</span></div>
+      <div><strong>i, j</strong><span>各元素を区別する添字</span></div>`:'';
+  const symbols=`
+    <div class="formula-symbol-grid">
+      <div><strong>M</strong><span>添加前の溶湯質量</span></div>
+      <div><strong>C₀</strong><span>添加前の目的元素濃度</span></div>
+      <div><strong>Cₜ</strong><span>目標濃度</span></div>
+      <div><strong>P</strong><span>添加材中の目的元素質量分率</span></div>
+      <div><strong>Y</strong><span>添加歩留まり（1 = 100%）</span></div>
+      <div><strong>x</strong><span>必要な添加材質量</span></div>
+      <div><strong>C₁</strong><span>推奨秤量後の予想濃度</span></div>
+      ${multiSymbols}
+    </div>`;
+
+  let body='';
+  if(r.rows.length===1){
+    const x=r.rows[0], rounded=r.preferred[0], fin=r.recommendedFinal[0], unit=x.targetUnit;
+    const c0=calcNum(x.C0,10), ct=calcNum(x.Ct,10), pp=calcNum(x.P,10), yy=calcNum(x.Y,10);
+    const theoretical=calcNum(x.theoreticalMassG,12), roundedStr=calcNum(rounded,12), finFrac=calcNum(fin,10);
+    body=`
+      <div class="formula-step"><div class="formula-step-title"><span>1</span>入力値を質量分率へ変換</div>
+        <div class="formula-input-grid">
+          <div><span>溶湯量 M</span><strong>${esc(formulaMassInUnit(r.M,meltUnit))}</strong><small>= ${esc(calcMassG(r.M))}</small></div>
+          <div><span>現在濃度 C₀</span><strong>${esc(formulaConc(x.C0,x.currentUnit))}</strong><small>= ${esc(c0)}（質量分率）</small></div>
+          <div><span>目標濃度 Cₜ</span><strong>${esc(formulaConc(x.Ct,x.targetUnit))}</strong><small>= ${esc(ct)}（質量分率）</small></div>
+          <div><span>添加材含有率 P</span><strong>${esc(calcNum(D.from(x.P).mul(100),9))} wt%</strong><small>= ${esc(pp)}</small></div>
+          <div><span>歩留まり Y</span><strong>${esc(formulaYield(x.Y))}</strong><small>= ${esc(yy)}</small></div>
+        </div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>2</span>理論必要添加量を計算</div>
+        <div class="formula-math"><div class="formula-line formula-main">x = M × (Cₜ − C₀) ÷ (P × Y − Cₜ)</div>
+        <div class="formula-line">= ${esc(calcNum(r.M,12))} × (${esc(ct)} − ${esc(c0)}) ÷ (${esc(pp)} × ${esc(yy)} − ${esc(ct)})</div>
+        <div class="formula-answer">= ${esc(theoretical)} g</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>3</span>天秤分解能で${esc(roundingLabel(r.mode))}</div>
+        <div class="formula-math"><div class="formula-line">理論値 ${esc(theoretical)} g → ${esc(r.scale.resolutionG)} g 単位で${esc(roundingLabel(r.mode))}</div>
+        <div class="formula-answer">推奨秤量値 = ${esc(fmtMassByScale(rounded,res))}</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>4</span>推奨秤量値から最終濃度を再計算</div>
+        <div class="formula-math"><div class="formula-line formula-main">C₁ = (M × C₀ + x × P × Y) ÷ (M + x)</div>
+        <div class="formula-line">= (${esc(calcNum(r.M,12))} × ${esc(c0)} + ${esc(roundedStr)} × ${esc(pp)} × ${esc(yy)}) ÷ (${esc(calcNum(r.M,12))} + ${esc(roundedStr)})</div>
+        <div class="formula-answer">= ${esc(formulaConc(fin,unit,12))}</div></div>
+        <div class="formula-final-grid"><div><span>添加後総重量</span><strong>${esc(fmtMassByScale(r.finalMass,res,meltUnit))}</strong></div><div><span>内部質量分率 C₁</span><strong>${esc(finFrac)}</strong></div></div>
+      </div>`;
+  }else{
+    const sumA=r.rows.reduce((sum,x)=>sum.add(x.a),D.zero());
+    const sumB=r.rows.reduce((sum,x)=>sum.add(x.b),D.zero());
+    const rowSteps=r.rows.map((x,i)=>{
+      const rounded=r.preferred[i], fin=r.recommendedFinal[i];
+      return `<div class="formula-multi-row"><h4>${esc(x.element)}</h4>
+        <div><span>aᵢ</span><strong>${esc(calcNum(x.a,11))} g</strong></div>
+        <div><span>bᵢ</span><strong>${esc(calcNum(x.b,11))}</strong></div>
+        <div><span>理論 xᵢ</span><strong>${esc(calcNum(x.theoreticalMassG,11))} g</strong></div>
+        <div><span>推奨秤量</span><strong>${esc(fmtMassByScale(rounded,res))}</strong></div>
+        <div><span>予想濃度 C₁</span><strong>${esc(fmtConc(fin,x.targetUnit))}</strong></div>
+      </div>`;
+    }).join('');
+    body=`
+      <div class="formula-step"><div class="formula-step-title"><span>1</span>複数元素の共通総重量を考慮</div>
+        <p class="formula-note formula-note-top">複数元素では、各添加材が最終総重量を増やすため、元素ごとに完全独立では計算せず、総添加量 S を共通項として連立します。</p>
+        <div class="formula-math"><div class="formula-line formula-main">Cₜᵢ = (M·C₀ᵢ + xᵢ·Pᵢ·Yᵢ) ÷ (M + Σxⱼ)</div>
+        <div class="formula-line">aᵢ = M·(Cₜᵢ − C₀ᵢ) ÷ (Pᵢ·Yᵢ)</div>
+        <div class="formula-line">bᵢ = Cₜᵢ ÷ (Pᵢ·Yᵢ)</div>
+        <div class="formula-line">S = Σaᵢ ÷ (1 − Σbᵢ)</div>
+        <div class="formula-line">xᵢ = aᵢ + bᵢ·S</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>2</span>共通総添加量 S を算出</div>
+        <div class="formula-math"><div class="formula-line">Σa = ${esc(calcNum(sumA,12))} g</div><div class="formula-line">Σb = ${esc(calcNum(sumB,12))}</div><div class="formula-answer">S = ${esc(calcNum(r.theoreticalTotalAddition,12))} g</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>3</span>元素ごとの添加量と推奨秤量値</div><div class="formula-multi-grid">${rowSteps}</div></div>
+      <div class="formula-step"><div class="formula-step-title"><span>4</span>推奨秤量後の総重量</div><div class="formula-final-grid"><div><span>総添加量</span><strong>${esc(fmtMassByScale(roundedTotal,res))}</strong></div><div><span>添加後総重量</span><strong>${esc(fmtMassByScale(r.finalMass,res,meltUnit))}</strong></div></div></div>`;
+  }
+  byId('blendDetail').innerHTML=`<div class="formula-intro"><strong>標準モデルA</strong><span>添加材全量を最終総重量へ加算し、目的元素として有効になる量だけに歩留まりを反映します。</span></div><div class="formula-legend"><h3>記号の意味</h3>${symbols}</div>${body}<div class="formula-note">※ 濃度は内部では質量分率に変換して計算し、中間値は丸めません。表示と秤量値だけを指定条件に従って丸めています。</div>`;
 }
 async function saveBlendHistory(){if(!state.lastBlend)return;const r=state.lastBlend;await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'配合計算',summary:`${r.rows.map((x,i)=>`${x.element} ${fmtMass(r.preferred[i])}`).join(' / ')}`,payload:{meltMassG:r.M.toString(),rows:r.rows.map((x,i)=>({element:x.element,currentFraction:x.C0.toString(),targetFraction:x.Ct.toString(),additiveId:x.additiveId,additiveName:x.additiveName,yieldFraction:x.Y.toString(),theoreticalMassG:x.theoreticalMassG.toString(),recommendedMassG:r.preferred[i].toString(),finalFraction:r.recommendedFinal[i].toString()}))}});toast('配合計算を履歴に保存しました。')}
-function loadBlendSample(){byId('blendMeltMass').value='500';byId('blendMeltUnit').value='kg';byId('blendRows').innerHTML='';addBlendRow({element:'Cu',current:'2',target:'50',currentUnit:'ppm',targetUnit:'ppm',additiveId:'add-5n-cu',additivePct:'99.999',yield:'95'});toast('サンプル値を入力しました。')}
+function loadBlendSample(){byId('blendMeltMass').value='1900';byId('blendMeltUnit').value='kg';if(state.scales.some(s=>s.id==='scale-100'))byId('blendScale').value='scale-100';byId('blendRounding').value='half-up';byId('blendRows').innerHTML='';addBlendRow({element:'Cu',current:'0.1',target:'0.5',currentUnit:'ppm',targetUnit:'wt%',additiveId:'add-5n-cu',additivePct:'99.999',yield:'100'});toast('サンプル値を入力しました。')}
 
 function bindVerify(){
   byId('verifyElement').addEventListener('change',()=>{const s=byId('verifyAdditive');s.innerHTML=additiveOptions(byId('verifyElement').value);if(s.options.length>1){s.selectedIndex=1;additiveChanged(s,'verifyAdditivePct',byId('verifyElement').value)}});
   byId('verifyAdditive').addEventListener('change',()=>additiveChanged(byId('verifyAdditive'),'verifyAdditivePct',byId('verifyElement').value));
-  byId('calcVerify').addEventListener('click',()=>{try{const M=E.massToGram(parsePositiveText(byId('verifyMeltMass'),'溶湯量'),byId('verifyMeltUnit').value);const C0=E.concentrationToFraction(parsePositiveText(byId('verifyCurrent'),'現在濃度'),byId('verifyCurrentUnit').value);const x=E.massToGram(parsePositiveText(byId('verifyAddition'),'実添加量'),byId('verifyAdditionUnit').value);const P=E.percentToFraction(parsePositiveText(byId('verifyAdditivePct'),'添加材含有率'));const Y=E.percentToFraction(parsePositiveText(byId('verifyYield'),'歩留まり'));const C1=E.calculateFinalConcentration({meltMassG:M,currentFraction:C0,additionMassG:x,additiveFraction:P,yieldFraction:Y});const unit=byId('verifyOutputUnit').value;let diff='—';let target=null;if(byId('verifyTarget').value.trim()){target=E.concentrationToFraction(byId('verifyTarget').value,byId('verifyTargetUnit').value);diff=fmtConc(C1.sub(target),unit)};byId('verifyResult').innerHTML=`<div class="result-card"><h3>添加確認結果</h3><div class="result-values"><div><span>推定最終濃度</span><strong>${fmtConc(C1,unit)}</strong></div><div><span>濃度増加量</span><strong>${fmtConc(C1.sub(C0),unit)}</strong></div><div><span>添加後総重量</span><strong>${fmtMass(M.add(x),'melt')}</strong></div>${target?`<div><span>目標との差</span><strong>${diff}</strong></div>`:''}</div></div>`;state.lastVerify={M,C0,x,P,Y,C1,target,unit};byId('saveVerifyHistory').disabled=false}catch(e){state.lastVerify=null;byId('saveVerifyHistory').disabled=true;resultError(byId('verifyResult'),e)}});
+  byId('calcVerify').addEventListener('click',()=>{try{const M=E.massToGram(parsePositiveText(byId('verifyMeltMass'),'溶湯量'),byId('verifyMeltUnit').value);const C0=E.concentrationToFraction(parsePositiveText(byId('verifyCurrent'),'現在濃度'),byId('verifyCurrentUnit').value);const x=E.massToGram(parsePositiveText(byId('verifyAddition'),'実添加量'),byId('verifyAdditionUnit').value);const P=E.percentToFraction(parsePositiveText(byId('verifyAdditivePct'),'添加材含有率'));const Y=E.percentToFraction(parsePositiveText(byId('verifyYield'),'歩留まり'));const C1=E.calculateFinalConcentration({meltMassG:M,currentFraction:C0,additionMassG:x,additiveFraction:P,yieldFraction:Y});const unit=byId('verifyOutputUnit').value;let diff='—';let target=null;if(byId('verifyTarget').value.trim()){target=E.concentrationToFraction(byId('verifyTarget').value,byId('verifyTargetUnit').value);diff=fmtConc(C1.sub(target),unit)};byId('verifyResult').innerHTML=`<div class="result-card"><h3>添加確認結果</h3><div class="result-values"><div><span>推定最終濃度</span><strong>${fmtConc(C1,unit)}</strong></div><div><span>濃度増加量</span><strong>${fmtConc(C1.sub(C0),unit)}</strong></div><div><span>添加後総重量</span><strong>${fmtMassInUnit(M.add(x),byId('verifyMeltUnit').value,getDecimals().melt)}</strong></div>${target?`<div><span>目標との差</span><strong>${diff}</strong></div>`:''}</div></div>`;state.lastVerify={M,C0,x,P,Y,C1,target,unit};byId('saveVerifyHistory').disabled=false}catch(e){state.lastVerify=null;byId('saveVerifyHistory').disabled=true;resultError(byId('verifyResult'),e)}});
   byId('saveVerifyHistory').addEventListener('click',async()=>{const r=state.lastVerify;if(!r)return;await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'添加確認',summary:`${byId('verifyElement').value}: ${fmtConc(r.C1,r.unit)}`,payload:{finalFraction:r.C1.toString()}});toast('添加確認を履歴に保存しました。')});
 }
 

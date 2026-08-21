@@ -14,7 +14,7 @@
 <body>
 <div id="appShell">
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0.2</small></div></div>
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0.3</small></div></div>
     <div class="top-actions"><button class="ghost" data-action="open-help">? ヘルプ</button></div>
   </header>
 
@@ -37,7 +37,7 @@
           <h2>1. 溶湯条件</h2>
           <div class="field-row">
             <label>溶湯量 <button class="help-dot" data-help="meltMass" aria-label="溶湯量ヘルプ">?</button>
-              <div class="input-with-unit"><input id="blendMeltMass" type="text" inputmode="decimal" value="500"><select id="blendMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div>
+              <div class="input-with-unit"><input id="blendMeltMass" type="text" inputmode="decimal" value="1900"><select id="blendMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div>
             </label>
             <label>天秤 <button class="help-dot" data-help="scale" aria-label="天秤ヘルプ">?</button><select id="blendScale"></select></label>
             <label>丸め方式<select id="blendRounding"><option value="half-up">四捨五入</option><option value="ceil">切り上げ</option><option value="floor">切り捨て</option></select></label>
@@ -199,7 +199,7 @@ Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度�
 <div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
-<script>window.APP_VERSION='1.0.2';</script>
+<script>window.APP_VERSION='1.0.3';</script>
 <script src="js/vendor/decimal-lite.js"></script>
 <script src="js/calc-engine.js"></script>
 <script src="js/storage.js"></script>
