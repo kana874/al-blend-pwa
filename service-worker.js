@@ -1,4 +1,4 @@
-const CACHE='al-blend-pwa-v1.0.3';
+const CACHE='al-blend-pwa-v1.0.4';
 const ASSETS=[
   './','./index.html','./css/app.css','./js/vendor/decimal-lite.js','./js/calc-engine.js','./js/storage.js','./js/export.js','./js/tutorial.js','./js/app.js','./manifest.json','./icons/icon-192.png','./icons/icon-512.png'
 ];
