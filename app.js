@@ -17,7 +17,17 @@ function selectedYieldMap(){try{return JSON.parse(localStorage.getItem('alBlendS
 function setSelectedYield(key,obj){const m=selectedYieldMap();m[key]=obj;localStorage.setItem('alBlendSelectedYield',JSON.stringify(m))}
 function additivePct(additive,element){if(!additive)return'';const c=(additive.components||[]).find(x=>String(x.element).toLowerCase()===String(element).toLowerCase())||(additive.components||[])[0];return c?c.wtPercent:''}
 function availableElements(){const m=new Map();for(const a of state.additives){const el=String(a.mainElement||'').trim();if(el&&!m.has(el.toLowerCase()))m.set(el.toLowerCase(),el)}return [...m.values()].sort((a,b)=>a.localeCompare(b,'ja',{sensitivity:'base'}))}
-function elementOptions(selected='',includeAll=false){const elems=availableElements();const lead=includeAll?'<option value="">全元素</option>':'';if(!elems.length)return lead+'<option value="">添加材マスタに主元素を登録してください</option>';return lead+elems.map(x=>`<option value="${esc(x)}" ${x===selected?'selected':''}>${esc(x)}</option>`).join('')}
+function elementOptions(selected='',includeAll=false){
+  const elems=availableElements();
+  if(includeAll){
+    const lead='<option value="">全元素</option>';
+    if(!elems.length)return lead;
+    return lead+elems.map(x=>`<option value="${esc(x)}" ${x===selected?'selected':''}>${esc(x)}</option>`).join('');
+  }
+  if(!elems.length)return '<option value="" selected disabled>添加材マスタに主元素を登録してください</option>';
+  const valid=elems.includes(selected);const lead=`<option value="" disabled ${valid?'':'selected'}>元素を選択</option>`;
+  return lead+elems.map(x=>`<option value="${esc(x)}" ${x===selected?'selected':''}>${esc(x)}</option>`).join('');
+}
 function scaleUnit(scale){return scale&&scale.resolutionUnit==='kg'?'kg':'g'}
 function scaleResolutionValue(scale){if(scale?.resolutionValue)return D.from(scale.resolutionValue);return E.gramToMass(scale?.resolutionG||'0',scaleUnit(scale))}
 function scaleResolutionText(scale){return `${scaleResolutionValue(scale).toString()} ${scaleUnit(scale)}`}
@@ -135,12 +145,13 @@ async function applyBlendPreset(){
   if(d.scaleId&&state.scales.some(x=>x.id===d.scaleId))byId('blendScale').value=d.scaleId;
   if(d.roundingMode)byId('blendRounding').value=d.roundingMode;
   byId('blendRows').innerHTML='';rowSeq=0;
+  const missingElements=[...new Set((d.rows||[]).map(r=>String(r.element||'').trim()).filter(el=>el&&!availableElements().includes(el)))];
   (d.rows||[]).forEach(r=>addBlendRow({...r,current:''}));
   if(!(d.rows||[]).length)addBlendRow({element:availableElements()[0]||''});
   byId('blendTotalAddition').textContent='—';byId('blendFinalMass').textContent='—';
   byId('blendElementSummary').innerHTML='';byId('blendElementSummary').classList.add('hidden');
   byId('blendDetailPanel').classList.add('hidden');setMessage(byId('blendGlobalMessage'),'溶湯量と現在濃度を入力して計算してください。','muted');
-  toast(`プリセット「${preset.name}」を読み込みました。`);
+  if(missingElements.length)toast(`プリセットを読み込みました。マスタにない元素（${missingElements.join(' / ')}）は再選択してください。`);else toast(`プリセット「${preset.name}」を読み込みました。`);
 }
 async function deleteBlendPreset(){
   const id=byId('blendPresetSelect').value;if(!id){toast('プリセットを選択してください。');return;}
@@ -160,10 +171,12 @@ function bindNavigation(){ $$('.nav-btn[data-screen]').forEach(b=>b.addEventList
 let rowSeq=0;
 function addBlendRow(preset={}){
   const id=`row-${++rowSeq}`;const div=document.createElement('div');div.className='element-card';div.dataset.rowId=id;
+  const requestedElement=String(preset.element||'').trim();
+  const selectedElement=availableElements().includes(requestedElement)?requestedElement:(requestedElement?'':(availableElements()[0]||''));
   div.innerHTML=`
     <div class="element-header"><div class="element-title"><span class="element-index">${rowSeq}</span><strong>元素条件</strong></div><button class="ghost remove-row" type="button">削除</button></div>
     <div class="element-grid">
-      <label>元素<select class="row-element">${elementOptions(preset.element||availableElements()[0]||'')}</select></label>
+      <label>元素<select class="row-element" aria-label="元素">${elementOptions(selectedElement)}</select></label>
       <label>現在濃度<div class="input-with-unit"><input class="row-current" inputmode="decimal" value="${esc(preset.current??'')}"/><select class="row-current-unit"><option ${preset.currentUnit==='wt%'?'selected':''}>wt%</option><option ${!preset.currentUnit||preset.currentUnit==='ppm'?'selected':''}>ppm</option><option ${preset.currentUnit==='ppb'?'selected':''}>ppb</option></select></div></label>
       <label>目標濃度<div class="input-with-unit"><input class="row-target" inputmode="decimal" value="${esc(preset.target??'')}"/><select class="row-target-unit"><option ${preset.targetUnit==='wt%'?'selected':''}>wt%</option><option ${!preset.targetUnit||preset.targetUnit==='ppm'?'selected':''}>ppm</option><option ${preset.targetUnit==='ppb'?'selected':''}>ppb</option></select></div></label>
       <label class="wide">添加材 <button class="help-dot" data-help="additive">?</button><select class="row-additive"></select></label>
@@ -202,7 +215,7 @@ async function collectBlendRows(){
   const cards=$$('.element-card');const rows=[];
   for(const card of cards){
     await resolveYieldForCard(card,false);
-    const element=card.querySelector('.row-element').value.trim();if(!element)throw new Error('元素名を入力してください。');
+    const element=card.querySelector('.row-element').value.trim();if(!element||!availableElements().includes(element))throw new Error('元素は添加材マスタの主元素からドロップダウンで選択してください。');
     const current=E.concentrationToFraction(parsePositiveText(card.querySelector('.row-current'),`${element} 現在濃度`),card.querySelector('.row-current-unit').value);
     const target=E.concentrationToFraction(parsePositiveText(card.querySelector('.row-target'),`${element} 目標濃度`),card.querySelector('.row-target-unit').value);
     const pct=parsePositiveText(card.querySelector('.row-additive-pct'),`${element} 添加材含有率`);if(D.from(pct).gt(100))throw new Error(`${element}: 添加材含有率は100%以下にしてください。`);
@@ -374,7 +387,7 @@ async function loadYieldRecords(){
   byId('yieldRecordRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.element)}</td><td>${esc(r.additiveName||'')}</td><td>${fmtYield(r.yieldFraction)}</td><td><input class="adopt-yield" data-id="${esc(r.id)}" type="checkbox" ${r.adopted!==false?'checked':''}></td><td>${esc(r.memo||'')}</td><td><button class="secondary use-yield" data-id="${esc(r.id)}">配合に使用</button> <button class="ghost delete-yield" data-id="${esc(r.id)}">削除</button></td></tr>`).join(''):`<tr><td colspan="7" class="muted">実績はありません。</td></tr>`;
   $$('.adopt-yield').forEach(c=>c.addEventListener('change',async()=>{const r=await S.get('yieldRecords',c.dataset.id);r.adopted=c.checked;await S.put('yieldRecords',r);loadYieldRecords()}));
   $$('.delete-yield').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この実績を削除しますか？')){await S.remove('yieldRecords',b.dataset.id);loadYieldRecords()}}));
-  $$('.use-yield').forEach(b=>b.addEventListener('click',async()=>{const r=await S.get('yieldRecords',b.dataset.id);setSelectedYield(`${r.element}|${r.additiveId}`,r);showScreen('blend');let card=$$('.element-card').find(c=>c.querySelector('.row-element').value===r.element);if(!card)card=addBlendRow({element:r.element,additiveId:r.additiveId});card.querySelector('.row-element').value=r.element;updateRowAdditives(card,r.additiveId);card.querySelector('.row-yield-source').value='record';card.querySelector('.row-yield').value=D.from(r.yieldFraction).mul(100).toString();toast('選択した歩留まり実績を配合計算へ反映しました。')}));
+  $$('.use-yield').forEach(b=>b.addEventListener('click',async()=>{const r=await S.get('yieldRecords',b.dataset.id);if(!availableElements().includes(r.element)){toast(`元素「${r.element}」は現在の添加材マスタにありません。主元素を登録してから使用してください。`);return;}setSelectedYield(`${r.element}|${r.additiveId}`,r);showScreen('blend');let card=$$('.element-card').find(c=>c.querySelector('.row-element').value===r.element);if(!card)card=addBlendRow({element:r.element,additiveId:r.additiveId});card.querySelector('.row-element').value=r.element;updateRowAdditives(card,r.additiveId);card.querySelector('.row-yield-source').value='record';card.querySelector('.row-yield').value=D.from(r.yieldFraction).mul(100).toString();toast('選択した歩留まり実績を配合計算へ反映しました。')}));
 }
 function calcStats(a){if(!a.length)return{n:0,avg:0,median:0,min:0,max:0,sd:0};const s=[...a].sort((x,y)=>x-y);const n=s.length,avg=s.reduce((x,y)=>x+y,0)/n,median=n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2,sd=Math.sqrt(s.reduce((x,y)=>x+(y-avg)**2,0)/n);return{n,avg,median,min:s[0],max:s[n-1],sd}}
 
