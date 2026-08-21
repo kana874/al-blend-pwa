@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d56">
+  <meta name="description" content="高純度Alターゲット鋳塊向けの配合・添加確認・歩留まり逆算・希釈計算PWA">
+  <title>Al 配合計算</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="appShell">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0</small></div></div>
+    <div class="top-actions"><span id="offlineBadge" class="status-badge">確認中</span><button class="ghost" data-action="open-help">? ヘルプ</button></div>
+  </header>
+
+  <aside class="sidebar" aria-label="メインナビゲーション">
+    <button class="nav-btn active" data-screen="blend">配合計算</button>
+    <button class="nav-btn" data-screen="verify">添加確認</button>
+    <button class="nav-btn" data-screen="yield">歩留まり</button>
+    <button class="nav-btn" data-screen="dilution">希釈計算</button>
+    <button class="nav-btn" data-screen="data">設定・データ</button>
+    <button class="nav-btn" data-screen="help">ヘルプ</button>
+  </aside>
+
+  <main class="main-content">
+    <div id="updateNotice" class="notice hidden">新しいバージョンを利用できます。<button id="reloadApp">更新して再読み込み</button></div>
+
+    <section class="screen active" id="screen-blend">
+      <div class="page-heading"><div><h1>配合計算</h1><p>目標濃度から必要添加量を計算します。複数元素の総添加重量も同時に考慮します。</p></div><button id="loadBlendSample" class="ghost">サンプル入力</button></div>
+      <div class="grid two-col">
+        <section class="panel">
+          <h2>1. 溶湯条件</h2>
+          <div class="field-row">
+            <label>溶湯量 <button class="help-dot" data-help="meltMass" aria-label="溶湯量ヘルプ">?</button>
+              <div class="input-with-unit"><input id="blendMeltMass" type="text" inputmode="decimal" value="500"><select id="blendMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div>
+            </label>
+            <label>天秤 <button class="help-dot" data-help="scale" aria-label="天秤ヘルプ">?</button><select id="blendScale"></select></label>
+            <label>丸め方式<select id="blendRounding"><option value="half-up">最近傍</option><option value="ceil">切り上げ</option><option value="floor">切り捨て</option></select></label>
+          </div>
+        </section>
+        <section class="panel summary-panel" id="blendSummary">
+          <h2>結果サマリー</h2>
+          <div class="summary-grid"><div><span>総添加量</span><strong id="blendTotalAddition">—</strong></div><div><span>添加後総重量</span><strong id="blendFinalMass">—</strong></div></div>
+          <div id="blendGlobalMessage" class="message muted">元素条件を入力して計算してください。</div>
+          <div class="button-row"><button id="calcBlend" class="primary">計算</button><button id="saveBlendHistory" class="secondary" disabled>履歴保存</button></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>2. 元素条件</h2><button id="addBlendRow" class="secondary">+ 元素を追加</button></div>
+        <div id="blendRows" class="element-list"></div>
+      </section>
+
+      <section class="panel hidden" id="blendDetailPanel">
+        <div class="panel-heading"><h2>計算内容</h2><button id="toggleBlendDetail" class="ghost">閉じる</button></div>
+        <div id="blendDetail"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-verify">
+      <div class="page-heading"><div><h1>添加確認</h1><p>実際の秤量値から添加後濃度を確認します。</p></div></div>
+      <section class="panel form-panel">
+        <div class="field-grid">
+          <label>溶湯量<div class="input-with-unit"><input id="verifyMeltMass" type="text" inputmode="decimal"><select id="verifyMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div></label>
+          <label>元素<select id="verifyElement"></select></label>
+          <label>現在濃度<div class="input-with-unit"><input id="verifyCurrent" type="text" inputmode="decimal"><select id="verifyCurrentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>目標濃度（任意）<div class="input-with-unit"><input id="verifyTarget" type="text" inputmode="decimal"><select id="verifyTargetUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>添加材<select id="verifyAdditive"></select></label>
+          <label>目的元素含有率 (wt%)<input id="verifyAdditivePct" type="text" inputmode="decimal"></label>
+          <label>実添加量<div class="input-with-unit"><input id="verifyAddition" type="text" inputmode="decimal"><select id="verifyAdditionUnit"><option>mg</option><option selected>g</option><option>kg</option></select></div></label>
+          <label>添加歩留まり (%)<input id="verifyYield" type="text" inputmode="decimal" value="100"></label>
+          <label>出力濃度単位<select id="verifyOutputUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></label>
+        </div>
+        <div class="button-row"><button id="calcVerify" class="primary">計算</button><button id="saveVerifyHistory" class="secondary" disabled>履歴保存</button></div>
+        <div id="verifyResult" class="result-box"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-yield">
+      <div class="page-heading"><div><h1>歩留まり逆算</h1><p>実添加量と添加後分析値から添加歩留まりを逆算し、実績として保存できます。</p></div></div>
+      <section class="panel form-panel">
+        <div class="field-grid">
+          <label>実施日<input id="yieldDate" type="date"></label>
+          <label>添加前溶湯量<div class="input-with-unit"><input id="yieldMeltMass" type="text" inputmode="decimal"><select id="yieldMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div></label>
+          <label>元素<select id="yieldElement"></select></label>
+          <label>添加前分析値<div class="input-with-unit"><input id="yieldBefore" type="text" inputmode="decimal"><select id="yieldBeforeUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>添加後分析値<div class="input-with-unit"><input id="yieldAfter" type="text" inputmode="decimal"><select id="yieldAfterUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>添加材<select id="yieldAdditive"></select></label>
+          <label>目的元素含有率 (wt%)<input id="yieldAdditivePct" type="text" inputmode="decimal"></label>
+          <label>実添加量<div class="input-with-unit"><input id="yieldAddition" type="text" inputmode="decimal"><select id="yieldAdditionUnit"><option>mg</option><option selected>g</option><option>kg</option></select></div></label>
+          <label class="span-2">メモ<textarea id="yieldMemo" rows="2"></textarea></label>
+        </div>
+        <div class="button-row"><button id="calcYield" class="primary">逆算</button><button id="saveYieldRecord" class="secondary" disabled>実績保存</button></div>
+        <div id="yieldResult" class="result-box"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>歩留まり実績</h2><div class="inline-controls"><select id="yieldFilterElement"><option value="">全元素</option></select><button id="refreshYieldRecords" class="ghost">更新</button></div></div>
+        <div id="yieldStats" class="stats-grid"></div>
+        <div class="table-wrap"><table><thead><tr><th>日付</th><th>元素</th><th>添加材</th><th>歩留まり</th><th>採用</th><th>メモ</th><th></th></tr></thead><tbody id="yieldRecordRows"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-dilution">
+      <div class="page-heading"><div><h1>希釈計算</h1><p>濃度過多時に、目標濃度まで下げるための高純度Al追加量を計算します。</p></div></div>
+      <section class="panel form-panel">
+        <div class="field-grid">
+          <label>現在溶湯量<div class="input-with-unit"><input id="dilMeltMass" type="text" inputmode="decimal"><select id="dilMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div></label>
+          <label>現在濃度<div class="input-with-unit"><input id="dilCurrent" type="text" inputmode="decimal"><select id="dilCurrentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>目標濃度<div class="input-with-unit"><input id="dilTarget" type="text" inputmode="decimal"><select id="dilTargetUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>希釈用Al中の目的元素濃度<div class="input-with-unit"><input id="dilDiluent" type="text" inputmode="decimal" value="0"><select id="dilDiluentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+        </div>
+        <div class="button-row"><button id="calcDilution" class="primary">計算</button><button id="saveDilutionHistory" class="secondary" disabled>履歴保存</button></div>
+        <div id="dilutionResult" class="result-box"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-data">
+      <div class="page-heading"><div><h1>設定・データ</h1><p>表示桁数、天秤、添加材、履歴、バックアップを管理します。</p></div></div>
+      <div class="grid two-col">
+        <section class="panel">
+          <h2>表示・計算設定</h2>
+          <div class="field-grid compact">
+            <label>溶湯量 小数桁<input id="setDecMelt" type="number" min="0" max="9"></label>
+            <label>添加量 小数桁<input id="setDecAddition" type="number" min="0" max="9"></label>
+            <label>ppm 小数桁<input id="setDecPpm" type="number" min="0" max="12"></label>
+            <label>ppb 小数桁<input id="setDecPpb" type="number" min="0" max="12"></label>
+            <label>wt% 小数桁<input id="setDecWt" type="number" min="0" max="12"></label>
+            <label>歩留まり 小数桁<input id="setDecYield" type="number" min="0" max="6"></label>
+          </div>
+          <div class="button-row"><button id="saveSettings" class="primary">設定保存</button><button id="restartTutorial" class="secondary">チュートリアルをもう一度見る</button></div>
+        </section>
+        <section class="panel">
+          <h2>バックアップ</h2>
+          <p class="muted">業務データと設定をJSONで保存・復元できます。</p>
+          <div class="button-row wrap"><button id="exportJson" class="primary">JSONバックアップ</button><button id="exportYieldCsv" class="secondary">歩留まりCSV</button><button id="exportHistoryCsv" class="secondary">履歴CSV</button></div>
+          <div class="import-box"><label>復元方式<select id="importMode"><option value="merge">既存データへ追加</option><option value="replace">全置換</option></select></label><label class="file-label">JSONを選択<input id="importJson" type="file" accept="application/json,.json"></label></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>天秤マスタ</h2></div>
+        <form id="scaleForm" class="inline-form"><input id="scaleName" placeholder="名称 例: 天秤A" required><input id="scaleResolution" placeholder="分解能(g) 例: 0.01" inputmode="decimal" required><button class="secondary" type="submit">追加</button></form>
+        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分解能</th><th>有効</th><th></th></tr></thead><tbody id="scaleRows"></tbody></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>添加材マスタ</h2></div>
+        <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 5N Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addMaker" placeholder="メーカー(任意)"><button class="secondary" type="submit">追加</button></form>
+        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分類</th><th>主元素</th><th>含有率</th><th>メーカー</th><th>有効</th><th></th></tr></thead><tbody id="additiveRows"></tbody></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>計算履歴</h2><button id="clearHistory" class="danger ghost">履歴を全削除</button></div>
+        <div class="table-wrap"><table><thead><tr><th>日時</th><th>種類</th><th>概要</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-help">
+      <div class="page-heading"><div><h1>ヘルプ</h1><p>計算式と基本操作はすべてオフラインで確認できます。</p></div></div>
+      <section class="panel help-content" id="helpContent">
+        <nav class="help-toc">
+          <a href="#h-purpose">アプリの目的</a><a href="#h-basic">基本的な配合計算</a><a href="#h-units">ppm / wt% / ppb</a><a href="#h-additive">純元素と母合金</a><a href="#h-yield">添加歩留まり</a><a href="#h-round">天秤分解能</a><a href="#h-dilution">希釈計算</a><a href="#h-formulas">計算式</a><a href="#h-data">データ保存</a><a href="#h-faq">FAQ</a>
+        </nav>
+        <article>
+          <h2 id="h-purpose">アプリの目的</h2><p>純Al～高純度Alを母材とし、Cu・Si・Ti等を添加する配合作業を支援します。配合計算、添加確認、歩留まり逆算、希釈計算を1つのPWAで扱います。</p>
+          <h2 id="h-basic">基本的な配合計算</h2><ol><li>溶湯量と天秤を設定します。</li><li>元素ごとに現在濃度と目標濃度を入力します。</li><li>添加材と目的元素含有率、歩留まりを設定します。</li><li>「計算」で理論添加量、推奨秤量値、丸め後予想濃度を確認します。</li></ol>
+          <h2 id="h-units">ppm / wt% / ppb</h2><p>内部ではすべて質量分率に変換します。1 wt% = 10,000 ppm = 10,000,000 ppbです。表示単位が異なっても同じ質量基準として計算します。</p>
+          <h2 id="h-additive">純元素と母合金</h2><p>純元素は例として5N Cu = 99.999 wt%のように目的元素含有率を登録します。母合金はAl-5TiならTi 5.000 wt%として登録します。Ver.1.0では主目的元素のみを計算対象とし、副次成分の連成はVer.2.0対象です。</p>
+          <h2 id="h-yield">添加歩留まり</h2><p>添加した目的元素のうち、計算上溶湯中に有効残留した割合です。100%では全量有効とみなします。逆算値が0%未満または100%超でも自動補正はしません。</p>
+          <h2 id="h-round">天秤分解能と秤量丸め</h2><p>理論値とは別に、天秤分解能に基づく下側・最近傍・上側の秤量候補を再計算します。表示の丸めは内部計算精度に影響しません。</p>
+          <h2 id="h-dilution">希釈計算</h2><p>現在濃度が目標濃度を上回った場合、希釈用Alの目的元素濃度も考慮して必要追加量を求めます。希釈材濃度は目標濃度より低い必要があります。</p>
+          <h2 id="h-formulas">計算式（標準モデルA）</h2><pre>C1 = (M*C0 + x*P*Y) / (M+x)
+
+x = M*(Ct-C0) / (P*Y-Ct)
+
+Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度、Ct: 目標濃度、C1: 添加後濃度、P: 添加材中目的元素質量分率、Y: 歩留まり、x: 添加材重量。</p>
+          <h2 id="h-data">データ保存とバックアップ</h2><p>設定はlocalStorage、添加材・天秤・歩留まり実績・計算履歴はIndexedDBに保存します。ブラウザデータ消去に備え、定期的なJSONバックアップを推奨します。</p>
+          <h2 id="h-faq">よくある質問</h2><details><summary>サーバーは必要ですか？</summary><p>計算自体には不要です。PWAとしてインストールする場合は初回配布にHTTPSまたはlocalhostが必要です。インストール後はオフラインで動作します。</p></details><details><summary>歩留まりが100%を超えました。</summary><p>分析値、溶湯重量、実添加量、サンプリングばらつき等を確認してください。値は自動的に100%へ補正しません。</p></details><details><summary>複数元素を同時に計算できますか？</summary><p>できます。Ver.1.0では各添加材が共通の最終総重量を増加させる効果まで連立で考慮します。</p></details>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="モバイルナビゲーション">
+    <button class="nav-btn active" data-screen="blend">配合</button><button class="nav-btn" data-screen="verify">確認</button><button class="nav-btn" data-screen="yield">歩留</button><button class="nav-btn" data-screen="dilution">希釈</button><button class="nav-btn" data-screen="data">設定</button>
+  </nav>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop hidden" role="presentation"></div>
+<div id="helpModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle"><div class="modal-card"><div class="panel-heading"><h2 id="helpModalTitle">ヘルプ</h2><button class="ghost" data-action="close-modal">閉じる</button></div><div id="helpModalBody"></div></div></div>
+<div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>window.APP_VERSION='1.0.0';</script>
+<script src="js/vendor/decimal-lite.js"></script>
+<script src="js/calc-engine.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/export.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
