@@ -225,20 +225,29 @@ async function collectBlendRows(){
   }
   return rows;
 }
+function renderBlendElementSummary(rows,preferred,res,scale){
+  const elementSummary=byId('blendElementSummary');
+  if(!elementSummary)return;
+  if(rows.length<2){
+    elementSummary.classList.add('hidden');
+    elementSummary.innerHTML='';
+    return;
+  }
+  elementSummary.innerHTML=`<strong>元素別添加量</strong><div class="summary-element-grid">${rows.map((r,i)=>`<div class="summary-element-item"><span>${esc(r.element)} 添加量</span><strong>${esc(fmtMassByScale(preferred[i],res,scaleUnit(scale)))}</strong></div>`).join('')}</div>`;
+  elementSummary.classList.remove('hidden');
+}
 async function calcBlend(){
-  const msg=byId('blendGlobalMessage');try{
+  const msg=byId('blendGlobalMessage');
+  try{
     const M=E.massToGram(parsePositiveText(byId('blendMeltMass'),'溶湯量'),byId('blendMeltUnit').value);if(M.lte(0))throw new Error('溶湯量は0より大きくしてください。');
     const rows=await collectBlendRows();const batch=E.calculateMultiElementBatch({meltMassG:M,rows});
     const scale=state.scales.find(s=>s.id===byId('blendScale').value);if(!scale)throw new Error('天秤を設定してください。');const res=D.from(scale.resolutionG);const mode=byId('blendRounding').value;
     const preferred=batch.rows.map(r=>r.theoreticalMassG.quantize(res,mode));
     const recommendedFinal=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:preferred});
     const totalPreferred=preferred.reduce((s,x)=>s.add(x),D.zero());const finalMass=M.add(totalPreferred);
-    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res,scaleUnit(scale));byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res,byId('blendMeltUnit').value);
-    const elementSummary=byId('blendElementSummary');
-    if(batch.rows.length>1){
-      elementSummary.classList.remove('hidden');
-      elementSummary.innerHTML=`<strong>元素別添加量</strong><div class="summary-element-grid">${batch.rows.map((r,i)=>`<div><span>${esc(r.element)}</span><strong>${esc(fmtMassByScale(preferred[i],res,scaleUnit(scale)))}</strong></div>`).join('')}</div>`;
-    }else{elementSummary.classList.add('hidden');elementSummary.innerHTML='';}
+    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res,scaleUnit(scale));
+    byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res,byId('blendMeltUnit').value);
+    renderBlendElementSummary(batch.rows,preferred,res,scale);
     batch.rows.forEach((r,i)=>{
       const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['四捨五入',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
       const unique=[];const seen=new Set();for(const [name,mass] of candidates){if(seen.has(mass.toString()))continue;seen.add(mass.toString());const ms=preferred.slice();ms[i]=mass;const fin=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:ms})[i];unique.push({name,mass,fin});}
@@ -250,8 +259,20 @@ async function calcBlend(){
         <div class="scenario-list" style="grid-column:1/-1"><strong>秤量候補</strong>${unique.map(u=>`<div class="${u.mass.eq(preferred[i])?'preferred':''}"><span>${u.name}: ${fmtMassByScale(u.mass,res,scaleUnit(scale))}</span><span>${fmtConc(u.fin,unit)}</span></div>`).join('')}</div>`;
     });
     state.lastBlend={M,rows:batch.rows,preferred,recommendedFinal,totalPreferred,finalMass,theoreticalTotalAddition:batch.totalAdditionG,scale,mode,at:new Date().toISOString()};
-    byId('saveBlendHistory').disabled=true;setMessage(msg,'計算完了','success');renderBlendDetail();await saveBlendHistory(true);
-  }catch(e){state.lastBlend=null;byId('saveBlendHistory').disabled=true;byId('blendElementSummary').classList.add('hidden');byId('blendElementSummary').innerHTML='';setMessage(msg,e.message,'error')}
+    byId('saveBlendHistory').disabled=true;
+    setMessage(msg,'計算完了','success');
+    renderBlendDetail();
+    try{
+      await saveBlendHistory(true);
+    }catch(historyError){
+      console.error('計算履歴の自動保存に失敗しました。',historyError);
+      toast('計算は完了しましたが、履歴の自動保存に失敗しました。');
+    }
+  }catch(e){
+    state.lastBlend=null;byId('saveBlendHistory').disabled=true;
+    byId('blendElementSummary').classList.add('hidden');byId('blendElementSummary').innerHTML='';
+    setMessage(msg,e.message,'error');
+  }
 }
 function renderBlendDetail(){
   const r=state.lastBlend;if(!r)return;
@@ -337,7 +358,48 @@ function renderBlendDetail(){
   }
   byId('blendDetail').innerHTML=`<div class="formula-intro"><strong>標準モデルA</strong><span>添加材全量を最終総重量へ加算し、目的元素として有効になる量だけに歩留まりを反映します。</span></div><div class="formula-legend"><h3>記号の意味</h3>${symbols}</div>${body}<div class="formula-note">※ 濃度は内部では質量分率に変換して計算し、中間値は丸めません。表示と秤量値だけを指定条件に従って丸めています。</div>`;
 }
-async function saveBlendHistory(silent=false){if(!state.lastBlend)return;const r=state.lastBlend;await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'配合計算',summary:`${r.rows.map((x,i)=>`${x.element} ${fmtMassByScale(r.preferred[i],r.scale.resolutionG,scaleUnit(r.scale))}`).join(' / ')}`,payload:{meltMassG:r.M.toString(),meltUnit:byId('blendMeltUnit').value,scaleId:r.scale.id,roundingMode:r.mode,rows:r.rows.map((x,i)=>({element:x.element,currentFraction:x.C0.toString(),targetFraction:x.Ct.toString(),currentUnit:x.currentUnit,targetUnit:x.targetUnit,additiveId:x.additiveId,additiveName:x.additiveName,yieldFraction:x.Y.toString(),theoreticalMassG:x.theoreticalMassG.toString(),recommendedMassG:r.preferred[i].toString(),finalFraction:r.recommendedFinal[i].toString()}))}});if(!silent)toast('配合計算を履歴に保存しました。')}
+async function persistCalculationHistory(record){
+  await S.put('calculationHistory',record);
+  await loadHistory();
+  return record;
+}
+function buildBlendHistoryRecord(r){
+  return {
+    id:S.uid('calc'),
+    date:new Date().toISOString(),
+    type:'配合計算',
+    summary:r.rows.map((x,i)=>`${x.element} ${fmtMassByScale(r.preferred[i],r.scale.resolutionG,scaleUnit(r.scale))}`).join(' / '),
+    payload:{
+      meltMassG:r.M.toString(),
+      meltUnit:byId('blendMeltUnit').value,
+      scaleId:r.scale.id,
+      roundingMode:r.mode,
+      totalAdditionMassG:r.totalPreferred.toString(),
+      finalMassG:r.finalMass.toString(),
+      rows:r.rows.map((x,i)=>({
+        element:x.element,
+        currentFraction:x.C0.toString(),
+        targetFraction:x.Ct.toString(),
+        currentUnit:x.currentUnit,
+        targetUnit:x.targetUnit,
+        additiveId:x.additiveId,
+        additiveName:x.additiveName,
+        yieldFraction:x.Y.toString(),
+        theoreticalMassG:x.theoreticalMassG.toString(),
+        recommendedMassG:r.preferred[i].toString(),
+        finalFraction:r.recommendedFinal[i].toString()
+      }))
+    }
+  };
+}
+async function saveBlendHistory(silent=false){
+  if(!state.lastBlend)return null;
+  const record=buildBlendHistoryRecord(state.lastBlend);
+  await persistCalculationHistory(record);
+  state.lastBlend.historyId=record.id;
+  if(!silent)toast('配合計算を履歴に保存しました。');
+  return record;
+}
 function loadBlendSample(){byId('blendMeltMass').value='1900';byId('blendMeltUnit').value='kg';if(state.scales.some(s=>s.id==='scale-100'))byId('blendScale').value='scale-100';byId('blendRounding').value='half-up';byId('blendRows').innerHTML='';rowSeq=0;addBlendRow({element:'Cu',current:'0.1',target:'0.5',currentUnit:'ppm',targetUnit:'wt%',additiveId:'add-5n-cu',additivePct:'99.999',yield:'100'});toast('サンプル値を入力しました。')}
 
 function bindVerify(){
@@ -355,7 +417,7 @@ function bindVerify(){
     byId('verifyResult').innerHTML=`<div class="result-card"><h3>添加確認結果</h3><div class="result-values"><div><span>推定最終濃度</span><strong>${fmtConc(C1,unit)}</strong></div><div><span>濃度増加量</span><strong>${fmtConc(C1.sub(C0),unit)}</strong></div><div><span>添加後総重量</span><strong>${fmtMassInUnit(M.add(x),byId('verifyMeltUnit').value,getDecimals().melt)}</strong></div>${target?`<div><span>目標との差</span><strong>${diff}</strong></div>`:''}</div></div>`;
     state.lastVerify={M,C0,x,P,Y,C1,target,unit};byId('saveVerifyHistory').disabled=true;
     const element=byId('verifyElement').value,aid=byId('verifyAdditive').value,ad=state.additives.find(a=>a.id===aid);
-    await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'添加確認',summary:`${element}: ${fmtConc(C1,unit)}`,payload:{element,meltMassG:M.toString(),meltUnit:byId('verifyMeltUnit').value,currentFraction:C0.toString(),additionMassG:x.toString(),additiveId:aid,additiveName:ad?.name||'',additiveFraction:P.toString(),yieldFraction:Y.toString(),finalFraction:C1.toString(),targetFraction:target?.toString()||null,outputUnit:unit}});
+    await persistCalculationHistory({id:S.uid('calc'),date:new Date().toISOString(),type:'添加確認',summary:`${element}: ${fmtConc(C1,unit)}`,payload:{element,meltMassG:M.toString(),meltUnit:byId('verifyMeltUnit').value,currentFraction:C0.toString(),additionMassG:x.toString(),additiveId:aid,additiveName:ad?.name||'',additiveFraction:P.toString(),yieldFraction:Y.toString(),finalFraction:C1.toString(),targetFraction:target?.toString()||null,outputUnit:unit}});
   }catch(e){state.lastVerify=null;byId('saveVerifyHistory').disabled=true;resultError(byId('verifyResult'),e)}
   });
 }
@@ -375,7 +437,7 @@ function bindYield(){
     byId('yieldResult').innerHTML=`<div class="result-card"><h3>逆算結果: ${fmtYield(Y)}</h3><div class="message ${cls}">${note} 値は自動補正していません。</div></div>`;
     state.lastYield={M,C0,C1,x,P,Y};byId('saveYieldRecord').disabled=false;
     const element=byId('yieldElement').value,aid=byId('yieldAdditive').value,ad=state.additives.find(a=>a.id===aid);
-    await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'歩留まり逆算',summary:`${element}: ${fmtYield(Y)}`,payload:{element,meltMassG:M.toString(),meltUnit:byId('yieldMeltUnit').value,beforeFraction:C0.toString(),afterFraction:C1.toString(),additionMassG:x.toString(),additiveId:aid,additiveName:ad?.name||'',additiveFraction:P.toString(),yieldFraction:Y.toString()}});
+    await persistCalculationHistory({id:S.uid('calc'),date:new Date().toISOString(),type:'歩留まり逆算',summary:`${element}: ${fmtYield(Y)}`,payload:{element,meltMassG:M.toString(),meltUnit:byId('yieldMeltUnit').value,beforeFraction:C0.toString(),afterFraction:C1.toString(),additionMassG:x.toString(),additiveId:aid,additiveName:ad?.name||'',additiveFraction:P.toString(),yieldFraction:Y.toString()}});
   }catch(e){state.lastYield=null;byId('saveYieldRecord').disabled=true;resultError(byId('yieldResult'),e)}
   });
   byId('saveYieldRecord').addEventListener('click',async()=>{const r=state.lastYield;if(!r)return;const aid=byId('yieldAdditive').value;const ad=state.additives.find(a=>a.id===aid);await S.put('yieldRecords',{id:S.uid('yield'),date:byId('yieldDate').value||today(),createdAt:new Date().toISOString(),element:byId('yieldElement').value,additiveId:aid,additiveName:ad?.name||'手入力',meltMassG:r.M.toString(),beforeFraction:r.C0.toString(),afterFraction:r.C1.toString(),additionMassG:r.x.toString(),additiveFraction:r.P.toString(),yieldFraction:r.Y.toString(),adopted:r.Y.gte(0)&&r.Y.lte(1),memo:byId('yieldMemo').value});toast('歩留まり実績を保存しました。');loadYieldRecords()});
@@ -401,7 +463,7 @@ function bindDilution(){
     const final=(M.mul(C0).add(x.mul(Cd))).div(M.add(x),48);
     byId('dilutionResult').innerHTML=`<div class="result-card"><h3>希釈計算結果</h3><div class="result-values"><div><span>必要希釈材量</span><strong>${fmtMass(x)}</strong></div><div><span>希釈後総重量</span><strong>${fmtMassInUnit(M.add(x),byId('dilMeltUnit').value,getDecimals().melt)}</strong></div><div><span>希釈後濃度</span><strong>${fmtConc(final,byId('dilTargetUnit').value)}</strong></div></div></div>`;
     state.lastDilution={M,C0,Ct,Cd,x,final};byId('saveDilutionHistory').disabled=true;
-    await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'希釈計算',summary:`希釈材 ${fmtMass(x)}`,payload:{meltMassG:M.toString(),meltUnit:byId('dilMeltUnit').value,currentFraction:C0.toString(),targetFraction:Ct.toString(),diluentFraction:Cd.toString(),dilutionMassG:x.toString(),finalFraction:final.toString()}});
+    await persistCalculationHistory({id:S.uid('calc'),date:new Date().toISOString(),type:'希釈計算',summary:`希釈材 ${fmtMass(x)}`,payload:{meltMassG:M.toString(),meltUnit:byId('dilMeltUnit').value,currentFraction:C0.toString(),targetFraction:Ct.toString(),diluentFraction:Cd.toString(),dilutionMassG:x.toString(),finalFraction:final.toString()}});
   }catch(e){state.lastDilution=null;byId('saveDilutionHistory').disabled=true;resultError(byId('dilutionResult'),e)}
   });
 }

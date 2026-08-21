@@ -60,18 +60,21 @@ eq(D.from('1.231').quantize('0.01','ceil'),'1.24','ceil');
 eq(D.from('1.239').quantize('0.01','floor'),'1.23','floor');
 
 
-// Ver.1.0.6 static integration checks
+// Ver.1.0.7 static integration checks
 const fs=require('fs');
 const path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'..','js','app.js'),'utf8');
 function has(text,needle,msg){assert.ok(text.includes(needle),msg||`missing: ${needle}`);passed++;}
-has(html,'Ver.1.0.6','version label');
+has(html,'Ver.1.0.7','version label');
 has(html,'id="blendPresetSelect"','preset selector');
 has(html,'id="exportScaleCsv"','scale CSV export');
 has(html,'id="exportAdditiveCsv"','additive CSV export');
 has(app,"kind:'blendPreset'",'preset persistence');
 has(app,'await saveBlendHistory(true)','automatic blend history');
+has(app,'function renderBlendElementSummary','multi-element summary renderer');
+has(app,'await loadHistory();','history list refresh after persistence');
+has(app,'計算履歴の自動保存に失敗しました。','history save failure is separated from calculation failure');
 has(app,"type:'歩留まり逆算'",'automatic yield calculation history');
 has(app,'class="ghost scale-edit"','scale edit action');
 has(app,'class="ghost add-edit"','additive edit action');
@@ -80,6 +83,8 @@ has(app,'<label>元素<select class="row-element"','blend element is select');
 assert.ok(!app.includes('<input class="row-element"'),'blend element must not be free-text input');passed++;
 has(app,"availableElements().includes(element)",'master-only element validation');
 has(app,'元素は添加材マスタの主元素からドロップダウンで選択してください。','dropdown validation message');
+assert.ok((app.match(/persistCalculationHistory\(/g)||[]).length>=5,'all calculation paths must use common history persistence');passed++;
+has(app,'${esc(r.element)} 添加量','element summary labels include 添加量');
 
 console.log(`PASS: ${passed} assertions`);
 console.log(`Sample theoretical Cu addition = ${x.toFixed(9)} g`);
