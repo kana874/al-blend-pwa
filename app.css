@@ -32,3 +32,21 @@ button.primary,button.secondary,button.ghost{min-height:40px;border-radius:9px;p
 /* Ver.1.0.4: scale resolution unit selector */
 .scale-resolution-input{margin-top:0;min-width:220px}
 @media(max-width:760px){.scale-resolution-input{min-width:0;width:100%}}
+
+
+.summary-element-list{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:#f8fbfc;padding:10px 12px}
+.summary-element-list>strong{display:block;font-size:13px;margin-bottom:7px}
+.summary-element-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.summary-element-grid>div{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;background:#fff;border:1px solid #e3eaee;border-radius:8px}
+.summary-element-grid span{font-weight:700}
+.summary-element-grid strong{white-space:nowrap}
+.preset-panel .compact-note{margin:3px 0 0}
+.preset-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.preset-controls select{min-width:240px;flex:1}
+.preset-save-form{margin-top:10px;margin-bottom:0}
+.table-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:760px){
+  .summary-element-grid{grid-template-columns:1fr}
+  .preset-controls{align-items:stretch}
+  .preset-controls select{min-width:0;width:100%}
+}

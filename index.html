@@ -14,7 +14,7 @@
 <body>
 <div id="appShell">
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0.4</small></div></div>
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0.5</small></div></div>
     <div class="top-actions"><button class="ghost" data-action="open-help">? ヘルプ</button></div>
   </header>
 
@@ -46,10 +46,24 @@
         <section class="panel summary-panel" id="blendSummary">
           <h2>結果サマリー</h2>
           <div class="summary-grid"><div><span>総添加量</span><strong id="blendTotalAddition">—</strong></div><div><span>添加後総重量</span><strong id="blendFinalMass">—</strong></div></div>
+          <div id="blendElementSummary" class="summary-element-list hidden"></div>
           <div id="blendGlobalMessage" class="message muted">元素条件を入力して計算してください。</div>
-          <div class="button-row"><button id="calcBlend" class="primary">計算</button><button id="saveBlendHistory" class="secondary" disabled>履歴保存</button></div>
+          <div class="button-row"><button id="calcBlend" class="primary">計算</button><button id="saveBlendHistory" class="secondary hidden" disabled aria-hidden="true">履歴保存</button></div>
         </section>
       </div>
+
+      <section class="panel preset-panel">
+        <div class="panel-heading"><div><h2>プリセット</h2><p class="muted compact-note">目標値・添加材・歩留まりなどを保存します。読み込み時は溶湯量と現在濃度だけ空欄になります。</p></div></div>
+        <div class="preset-controls">
+          <select id="blendPresetSelect" aria-label="プリセット選択"><option value="">プリセットを選択</option></select>
+          <button id="applyBlendPreset" class="secondary" type="button">読み込み</button>
+          <button id="deleteBlendPreset" class="ghost danger" type="button">削除</button>
+        </div>
+        <div class="inline-form preset-save-form">
+          <input id="blendPresetName" placeholder="プリセット名" maxlength="80">
+          <button id="saveBlendPreset" class="secondary" type="button">現在条件を保存</button>
+        </div>
+      </section>
 
       <section class="panel">
         <div class="panel-heading"><h2>2. 元素条件</h2><button id="addBlendRow" class="secondary">+ 元素を追加</button></div>
@@ -78,7 +92,7 @@
           <label>添加歩留まり (%)<input id="verifyYield" type="text" inputmode="decimal" value="100"></label>
           <label>出力濃度単位<select id="verifyOutputUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></label>
         </div>
-        <div class="button-row"><button id="calcVerify" class="primary">計算</button><button id="saveVerifyHistory" class="secondary" disabled>履歴保存</button></div>
+        <div class="button-row"><button id="calcVerify" class="primary">計算</button><button id="saveVerifyHistory" class="secondary hidden" disabled aria-hidden="true">履歴保存</button></div>
         <div id="verifyResult" class="result-box"></div>
       </section>
     </section>
@@ -117,7 +131,7 @@
           <label>目標濃度<div class="input-with-unit"><input id="dilTarget" type="text" inputmode="decimal"><select id="dilTargetUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
           <label>希釈用Al中の目的元素濃度<div class="input-with-unit"><input id="dilDiluent" type="text" inputmode="decimal" value="0"><select id="dilDiluentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
         </div>
-        <div class="button-row"><button id="calcDilution" class="primary">計算</button><button id="saveDilutionHistory" class="secondary" disabled>履歴保存</button></div>
+        <div class="button-row"><button id="calcDilution" class="primary">計算</button><button id="saveDilutionHistory" class="secondary hidden" disabled aria-hidden="true">履歴保存</button></div>
         <div id="dilutionResult" class="result-box"></div>
       </section>
     </section>
@@ -146,15 +160,15 @@
       </div>
 
       <section class="panel">
-        <div class="panel-heading"><h2>天秤マスタ</h2></div>
-        <form id="scaleForm" class="inline-form"><input id="scaleName" placeholder="名称 例: 天秤A" required><div class="input-with-unit scale-resolution-input"><input id="scaleResolution" placeholder="分解能 例: 0.01" inputmode="decimal" required><select id="scaleResolutionUnit" aria-label="天秤分解能の単位"><option value="g">g</option><option value="kg">kg</option></select></div><button class="secondary" type="submit">追加</button></form>
-        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分解能</th><th>有効</th><th></th></tr></thead><tbody id="scaleRows"></tbody></table></div>
+        <div class="panel-heading"><h2>天秤マスタ</h2><button id="exportScaleCsv" class="ghost" type="button">CSV出力</button></div>
+        <form id="scaleForm" class="inline-form"><input id="scaleName" placeholder="名称 例: 天秤A" required><div class="input-with-unit scale-resolution-input"><input id="scaleResolution" placeholder="分解能 例: 0.01" inputmode="decimal" required><select id="scaleResolutionUnit" aria-label="天秤分解能の単位"><option value="g">g</option><option value="kg">kg</option></select></div><button id="scaleSubmitBtn" class="secondary" type="submit">追加</button><button id="cancelScaleEdit" class="ghost hidden" type="button">編集取消</button></form>
+        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分解能</th><th>有効</th><th>操作</th></tr></thead><tbody id="scaleRows"></tbody></table></div>
       </section>
 
       <section class="panel">
-        <div class="panel-heading"><h2>添加材マスタ</h2></div>
-        <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 純Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addNote" placeholder="備考(任意)"><button class="secondary" type="submit">追加</button></form>
-        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分類</th><th>主元素</th><th>含有率</th><th>備考</th><th>有効</th><th></th></tr></thead><tbody id="additiveRows"></tbody></table></div>
+        <div class="panel-heading"><h2>添加材マスタ</h2><button id="exportAdditiveCsv" class="ghost" type="button">CSV出力</button></div>
+        <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 純Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addNote" placeholder="備考(任意)"><button id="additiveSubmitBtn" class="secondary" type="submit">追加</button><button id="cancelAdditiveEdit" class="ghost hidden" type="button">編集取消</button></form>
+        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分類</th><th>主元素</th><th>含有率</th><th>備考</th><th>有効</th><th>操作</th></tr></thead><tbody id="additiveRows"></tbody></table></div>
       </section>
 
       <section class="panel">
@@ -182,7 +196,7 @@
 x = M*(Ct-C0) / (P*Y-Ct)
 
 Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度、Ct: 目標濃度、C1: 添加後濃度、P: 添加材中目的元素質量分率、Y: 歩留まり、x: 添加材重量。</p>
-          <h2 id="h-data">データ保存とバックアップ</h2><p>設定はlocalStorage、添加材・天秤・歩留まり実績・計算履歴はIndexedDBに保存します。ブラウザデータ消去に備え、定期的なJSONバックアップを推奨します。</p>
+          <h2 id="h-data">データ保存とバックアップ</h2><p>設定はlocalStorage、添加材・天秤・歩留まり実績・計算履歴・配合プリセットはIndexedDBに保存します。計算履歴は計算成功時に自動保存されます。ブラウザデータ消去に備え、定期的なJSONバックアップを推奨します。</p>
           <h2 id="h-faq">よくある質問</h2><details><summary>サーバーは必要ですか？</summary><p>計算自体には不要です。PWAとしてインストールする場合は初回配布にHTTPSまたはlocalhostが必要です。インストール後はオフラインで動作します。</p></details><details><summary>歩留まりが100%を超えました。</summary><p>分析値、溶湯重量、実添加量、サンプリングばらつき等を確認してください。値は自動的に100%へ補正しません。</p></details><details><summary>複数元素を同時に計算できますか？</summary><p>できます。Ver.1.0では各添加材が共通の最終総重量を増加させる効果まで連立で考慮します。</p></details>
         </article>
       </section>
@@ -199,7 +213,7 @@ Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度�
 <div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
-<script>window.APP_VERSION='1.0.4';</script>
+<script>window.APP_VERSION='1.0.5';</script>
 <script src="js/vendor/decimal-lite.js"></script>
 <script src="js/calc-engine.js"></script>
 <script src="js/storage.js"></script>
