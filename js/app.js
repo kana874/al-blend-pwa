@@ -8,7 +8,7 @@ const HELP={
   meltMass:'配合開始時点のAl溶湯重量です。g / kg / tから選択できます。',
   scale:'推奨秤量値の量子化に使用する天秤分解能です。内部の理論値は丸めません。',
   yield:'添加した目的元素のうち、計算上溶湯中に有効残留した割合です。',
-  additive:'添加材中の目的元素含有率をwt%で指定します。例: 5N Cu=99.999、Al-5Ti=5.000。'
+  additive:'添加材中の目的元素含有率をwt%で指定します。純元素は使用材の分析値・保証値を、Al-5TiならTi 5.000などを入力します。'
 };
 function toast(msg){const t=byId('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),2600)}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -21,6 +21,16 @@ function fmtD(v,dp){return D.from(v).toFixed(dp)}
 function fmtMass(g,mode='addition'){
   const o=E.gramToDisplayMass(g,'auto'); const dp=mode==='melt'?getDecimals().melt:getDecimals().addition; return `${o.value.toFixed(dp)} ${o.unit}`;
 }
+function decimalPlacesForStep(step){
+  const s=D.from(step).abs().toString();
+  return s.includes('.')?s.split('.')[1].length:0;
+}
+function fmtMassByScale(g,resolutionG,unit='auto'){
+  const o=E.gramToDisplayMass(g,unit);
+  const step=E.gramToMass(resolutionG,o.unit);
+  return `${o.value.toFixed(decimalPlacesForStep(step))} ${o.unit}`;
+}
+function roundingLabel(mode){return mode==='ceil'?'切り上げ':mode==='floor'?'切り捨て':'四捨五入'}
 function fmtConc(frac,unit){const dp=unit==='ppm'?getDecimals().ppm:unit==='ppb'?getDecimals().ppb:getDecimals().wt;return `${E.fractionToConcentration(frac,unit).toFixed(dp)} ${unit}`}
 function fmtYield(frac){return `${D.from(frac).mul(100).toFixed(getDecimals().yield)} %`}
 function parsePositiveText(el,name){const v=String(el.value).trim();if(!v)throw new Error(`${name}を入力してください。`);return v}
@@ -37,8 +47,7 @@ function renderScaleSelects(){
   if(state.scales.some(s=>s.id===prev))sel.value=prev;
 }
 function additiveOptions(element='',selected=''){
-  let arr=state.additives;
-  const f=arr.filter(a=>!element||String(a.mainElement).toLowerCase()===String(element).toLowerCase()); if(f.length)arr=f;
+  const arr=element?state.additives.filter(a=>String(a.mainElement).toLowerCase()===String(element).toLowerCase()):state.additives;
   return `<option value="">選択</option>`+arr.map(a=>`<option value="${esc(a.id)}" ${a.id===selected?'selected':''}>${esc(a.name)}</option>`).join('');
 }
 function renderAllAdditiveSelects(){
@@ -122,22 +131,36 @@ async function calcBlend(){
     const preferred=batch.rows.map(r=>r.theoreticalMassG.quantize(res,mode));
     const recommendedFinal=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:preferred});
     const totalPreferred=preferred.reduce((s,x)=>s.add(x),D.zero());const finalMass=M.add(totalPreferred);
-    byId('blendTotalAddition').textContent=fmtMass(totalPreferred);byId('blendFinalMass').textContent=fmtMass(finalMass,'melt');
+    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res);byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res);
     batch.rows.forEach((r,i)=>{
-      const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['最近傍',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
+      const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['四捨五入',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
       const unique=[];const seen=new Set();for(const [name,mass] of candidates){if(seen.has(mass.toString()))continue;seen.add(mass.toString());const ms=preferred.slice();ms[i]=mass;const fin=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:ms})[i];unique.push({name,mass,fin});}
       const out=card.querySelector('.row-result');out.classList.remove('hidden');out.innerHTML=`
         <div><span>理論必要添加量</span><strong>${fmtMass(r.theoreticalMassG)}</strong></div>
-        <div><span>推奨秤量値</span><strong>${fmtMass(preferred[i])}</strong></div>
+        <div><span>推奨秤量値</span><strong>${fmtMassByScale(preferred[i],res)}</strong></div>
         <div><span>推奨時の予想濃度</span><strong>${fmtConc(recommendedFinal[i],unit)}</strong></div>
         <div><span>目標との差</span><strong>${fmtConc(recommendedFinal[i].sub(r.Ct),unit)}</strong></div>
-        <div class="scenario-list" style="grid-column:1/-1"><strong>秤量候補</strong>${unique.map(u=>`<div class="${u.mass.eq(preferred[i])?'preferred':''}"><span>${u.name}: ${fmtMass(u.mass)}</span><span>${fmtConc(u.fin,unit)}</span></div>`).join('')}</div>`;
+        <div class="scenario-list" style="grid-column:1/-1"><strong>秤量候補</strong>${unique.map(u=>`<div class="${u.mass.eq(preferred[i])?'preferred':''}"><span>${u.name}: ${fmtMassByScale(u.mass,res)}</span><span>${fmtConc(u.fin,unit)}</span></div>`).join('')}</div>`;
     });
-    state.lastBlend={M,rows:batch.rows,preferred,recommendedFinal,totalPreferred,finalMass,scale,mode,at:new Date().toISOString()};
+    state.lastBlend={M,rows:batch.rows,preferred,recommendedFinal,totalPreferred,finalMass,theoreticalTotalAddition:batch.totalAdditionG,scale,mode,at:new Date().toISOString()};
     byId('saveBlendHistory').disabled=false;setMessage(msg,'計算完了。推奨秤量値は天秤分解能を反映しています。','success');renderBlendDetail();
   }catch(e){state.lastBlend=null;byId('saveBlendHistory').disabled=true;setMessage(msg,e.message,'error')}
 }
-function renderBlendDetail(){const r=state.lastBlend;if(!r)return;const p=byId('blendDetailPanel');p.classList.remove('hidden');byId('blendDetail').innerHTML=`<p><strong>標準モデルA</strong>: 添加材全量を最終総重量へ加算し、目的元素として有効になる量のみ歩留まり補正します。</p><div class="table-wrap"><table><thead><tr><th>元素</th><th>初期元素量</th><th>目標濃度</th><th>添加材</th><th>歩留まり</th><th>理論量</th><th>推奨量</th></tr></thead><tbody>${r.rows.map((x,i)=>`<tr><td>${esc(x.element)}</td><td>${fmtMass(r.M.mul(x.C0))}</td><td>${fmtConc(x.Ct,x.targetUnit)}</td><td>${esc(x.additiveName)}</td><td>${fmtYield(x.Y)}</td><td>${fmtMass(x.theoreticalMassG)}</td><td>${fmtMass(r.preferred[i])}</td></tr>`).join('')}</tbody></table></div>`}
+function renderBlendDetail(){
+  const r=state.lastBlend;if(!r)return;
+  const p=byId('blendDetailPanel');p.classList.remove('hidden');
+  const disclosure=byId('blendDetailDisclosure');if(disclosure)disclosure.open=false;
+  const res=D.from(r.scale.resolutionG);const roundedTotal=r.totalPreferred;
+  const sumA=r.rows.reduce((sum,x)=>sum.add(x.a),D.zero());
+  const sumB=r.rows.reduce((sum,x)=>sum.add(x.b),D.zero());
+  const general=`Cₜᵢ = (M·C₀ᵢ + xᵢ·Pᵢ·Yᵢ) / (M + Σxⱼ)\n\naᵢ = M·(Cₜᵢ − C₀ᵢ) / (Pᵢ·Yᵢ)\nbᵢ = Cₜᵢ / (Pᵢ·Yᵢ)\nS = Σxᵢ = Σaᵢ / (1 − Σbᵢ)\nxᵢ = aᵢ + bᵢ·S`;
+  const blocks=r.rows.map((x,i)=>{
+    const rounded=r.preferred[i];const fin=r.recommendedFinal[i];const unit=x.targetUnit;
+    const eq=`a = ${r.M.toString()} × (${x.Ct.toString()} − ${x.C0.toString()}) / (${x.P.toString()} × ${x.Y.toString()}) = ${x.a.toString()} g\nb = ${x.Ct.toString()} / (${x.P.toString()} × ${x.Y.toString()}) = ${x.b.toString()}\nx = a + b × S = ${x.theoreticalMassG.toString()} g\n${roundingLabel(r.mode)}(${r.scale.resolutionG} g) → ${rounded.toString()} g\nC₁ = (${r.M.toString()} × ${x.C0.toString()} + ${rounded.toString()} × ${x.P.toString()} × ${x.Y.toString()}) / (${r.M.toString()} + ${roundedTotal.toString()})\n   = ${E.fractionToConcentration(fin,unit).toString()} ${unit}`;
+    return `<div class="formula-block"><h3>${esc(x.element)}</h3><div class="formula-values"><div>現在濃度: ${fmtConc(x.C0,x.currentUnit)}</div><div>目標濃度: ${fmtConc(x.Ct,unit)}</div><div>添加材含有率: ${D.from(x.P).mul(100).toString()} wt%</div><div>歩留まり: ${fmtYield(x.Y)}</div><div>理論添加量: ${fmtMass(x.theoreticalMassG)}</div><div>推奨秤量値: ${fmtMassByScale(rounded,res)}</div></div><div class="formula-equation">${esc(eq)}</div></div>`;
+  }).join('');
+  byId('blendDetail').innerHTML=`<p class="formula-lead"><strong>標準モデルA</strong>：添加材全量を最終総重量へ加算し、目的元素として有効になる量のみ歩留まり補正します。複数元素では、全添加材による共通の総重量増加を連立で考慮します。</p><div class="formula-block"><h3>使用する式</h3><div class="formula-equation">${esc(general)}</div><div class="formula-values"><div>M = ${r.M.toString()} g</div><div>Σa = ${sumA.toString()} g</div><div>Σb = ${sumB.toString()}</div><div>S = ${r.theoreticalTotalAddition.toString()} g</div><div>天秤分解能 = ${esc(r.scale.resolutionG)} g</div><div>丸め方式 = ${roundingLabel(r.mode)}</div></div><div class="formula-note">濃度は計算内部では質量分率に変換し、中間計算では丸めません。秤量値だけを選択した天秤分解能で量子化し、その値から最終濃度を再計算します。</div></div>${blocks}`;
+}
 async function saveBlendHistory(){if(!state.lastBlend)return;const r=state.lastBlend;await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'配合計算',summary:`${r.rows.map((x,i)=>`${x.element} ${fmtMass(r.preferred[i])}`).join(' / ')}`,payload:{meltMassG:r.M.toString(),rows:r.rows.map((x,i)=>({element:x.element,currentFraction:x.C0.toString(),targetFraction:x.Ct.toString(),additiveId:x.additiveId,additiveName:x.additiveName,yieldFraction:x.Y.toString(),theoreticalMassG:x.theoreticalMassG.toString(),recommendedMassG:r.preferred[i].toString(),finalFraction:r.recommendedFinal[i].toString()}))}});toast('配合計算を履歴に保存しました。')}
 function loadBlendSample(){byId('blendMeltMass').value='500';byId('blendMeltUnit').value='kg';byId('blendRows').innerHTML='';addBlendRow({element:'Cu',current:'2',target:'50',currentUnit:'ppm',targetUnit:'ppm',additiveId:'add-5n-cu',additivePct:'99.999',yield:'95'});toast('サンプル値を入力しました。')}
 
@@ -198,14 +221,13 @@ function bindHelp(){
 function openHelpModal(text){byId('helpModalBody').innerHTML=`<p>${esc(text)}</p>`;byId('modalBackdrop').classList.remove('hidden');byId('helpModal').classList.remove('hidden')}
 function closeModal(){byId('helpModal').classList.add('hidden');if(byId('tutorialModal').classList.contains('hidden'))byId('modalBackdrop').classList.add('hidden')}
 
-function onlineState(){const b=byId('offlineBadge');if(navigator.onLine){b.textContent='オンライン';b.className='status-badge online'}else{b.textContent='オフライン';b.className='status-badge offline'}}
-function setupPWA(){onlineState();addEventListener('online',onlineState);addEventListener('offline',onlineState);if('serviceWorker'in navigator){navigator.serviceWorker.register('./service-worker.js').then(reg=>{reg.addEventListener('updatefound',()=>{const w=reg.installing;w?.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)byId('updateNotice').classList.remove('hidden')})})}).catch(()=>{});byId('reloadApp').addEventListener('click',()=>location.reload())}}
+function setupPWA(){if('serviceWorker'in navigator){navigator.serviceWorker.register('./service-worker.js').then(reg=>{reg.addEventListener('updatefound',()=>{const w=reg.installing;w?.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)byId('updateNotice').classList.remove('hidden')})})}).catch(()=>{});byId('reloadApp').addEventListener('click',()=>location.reload())}}
 
 async function init(){
-  state.settings=S.getSettings();await S.openDB();await S.seedDefaults();fillElementSelects();await refreshMasters();
+  state.settings=S.getSettings();await S.openDB();await S.seedDefaults();await S.migrateAppData();fillElementSelects();await refreshMasters();
   const datalist=document.createElement('datalist');datalist.id='elementList';datalist.innerHTML=['Cu','Si','Ti','Fe','Mn','Mg','Zn','B'].map(x=>`<option value="${x}">`).join('');document.body.appendChild(datalist);
   bindNavigation();bindVerify();bindYield();bindDilution();bindSettings();bindHelp();AppTutorial.init();setupPWA();
-  byId('addBlendRow').addEventListener('click',()=>addBlendRow({element:'Cu'}));byId('calcBlend').addEventListener('click',calcBlend);byId('saveBlendHistory').addEventListener('click',saveBlendHistory);byId('loadBlendSample').addEventListener('click',loadBlendSample);byId('toggleBlendDetail').addEventListener('click',()=>byId('blendDetailPanel').classList.add('hidden'));
+  byId('addBlendRow').addEventListener('click',()=>addBlendRow({element:'Cu'}));byId('calcBlend').addEventListener('click',calcBlend);byId('saveBlendHistory').addEventListener('click',saveBlendHistory);byId('loadBlendSample').addEventListener('click',loadBlendSample);
   addBlendRow({element:'Cu',additiveId:'add-5n-cu',additivePct:'99.999'});
   // initialize single-form additive selections
   ['verify','yield'].forEach(prefix=>{const elem=byId(`${prefix}Element`).value;const sel=byId(`${prefix}Additive`);sel.innerHTML=additiveOptions(elem);if(sel.options.length>1){sel.selectedIndex=1;additiveChanged(sel,`${prefix}AdditivePct`,elem)}});

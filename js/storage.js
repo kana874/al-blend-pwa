@@ -86,9 +86,9 @@
     const meta = await get('appMetadata', 'seeded');
     if (meta) return;
     const additives = [
-      { id:'add-5n-cu', name:'5N Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
-      { id:'add-5n-si', name:'5N Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
-      { id:'add-5n-ti', name:'5N Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-cu', name:'Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-si', name:'Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-ti', name:'Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
       { id:'add-al5ti', name:'Al-5Ti', type:'master', mainElement:'Ti', components:[{element:'Ti', wtPercent:'5.000'}], purity:'', maker:'', partNo:'', note:'Al balance', active:true }
     ];
     const scales = [
@@ -103,11 +103,27 @@
     await put('appMetadata', { key:'schemaVersion', value:1 });
   }
 
+  async function migrateAppData() {
+    const key = 'migration-1.0.2-restore-pure-presets-without-5n-label';
+    if (await get('appMetadata', key)) return;
+    const presets = [
+      { id:'add-5n-cu', name:'Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-si', name:'Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-ti', name:'Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true }
+    ];
+    for (const preset of presets) {
+      const current = await get('additives', preset.id);
+      if (current) await put('additives', { ...current, name:preset.name });
+      else await put('additives', preset);
+    }
+    await put('appMetadata', { key, value:true, at:new Date().toISOString() });
+  }
+
   async function exportAll() {
     const data = {};
     for (const s of STORES) data[s] = await getAll(s);
     return {
-      appVersion: root.APP_VERSION || '1.0.0', dbSchemaVersion: DB_VERSION,
+      appVersion: root.APP_VERSION || '1.0.2', dbSchemaVersion: DB_VERSION,
       exportedAt: new Date().toISOString(), settings: getSettings(), data
     };
   }
@@ -136,5 +152,5 @@
     if (backup.settings) saveSettings({ ...getSettings(), ...backup.settings, decimals:{...getSettings().decimals, ...(backup.settings.decimals||{})} });
   }
 
-  root.AppStorage = { DB_NAME, DB_VERSION, STORES, uid, openDB, getAll, get, put, remove, clear, getSettings, saveSettings, seedDefaults, exportAll, importAll };
+  root.AppStorage = { DB_NAME, DB_VERSION, STORES, uid, openDB, getAll, get, put, remove, clear, getSettings, saveSettings, seedDefaults, migrateAppData, exportAll, importAll };
 })(typeof self !== 'undefined' ? self : window);

@@ -11,7 +11,7 @@ eq(E.massToGram('1','t'),'1000000','1 t -> g');
 eq(E.concentrationToFraction('1','ppm'),'0.000001','1 ppm fraction');
 eq(E.fractionToConcentration('0.000001','ppm'),'1','fraction -> ppm');
 
-// sample addition: 500 kg, Cu 2 -> 50 ppm, 5N Cu, Y=95%
+// sample addition: 500 kg, Cu 2 -> 50 ppm, Cu 99.999 wt%, Y=95%
 const M=E.massToGram('500','kg');
 const C0=E.concentrationToFraction('2','ppm');
 const Ct=E.concentrationToFraction('50','ppm');
@@ -40,7 +40,7 @@ near(E.fractionToConcentration(finals[0],'ppm'),'50',1e-18,'multi Cu');
 near(E.fractionToConcentration(finals[1],'ppm'),'20',1e-18,'multi Ti');
 
 // rounding
-const q=D.from('1.23456').quantize('0.01','half-up');eq(q,'1.23','nearest quantize');
+const q=D.from('1.23456').quantize('0.01','half-up');eq(q,'1.23','half-up quantize');
 eq(D.from('1.235').quantize('0.01','half-up'),'1.24','half-up tie');
 eq(D.from('1.231').quantize('0.01','ceil'),'1.24','ceil');
 eq(D.from('1.239').quantize('0.01','floor'),'1.23','floor');

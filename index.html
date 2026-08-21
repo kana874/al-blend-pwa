@@ -14,8 +14,8 @@
 <body>
 <div id="appShell">
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0</small></div></div>
-    <div class="top-actions"><span id="offlineBadge" class="status-badge">確認中</span><button class="ghost" data-action="open-help">? ヘルプ</button></div>
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.0.2</small></div></div>
+    <div class="top-actions"><button class="ghost" data-action="open-help">? ヘルプ</button></div>
   </header>
 
   <aside class="sidebar" aria-label="メインナビゲーション">
@@ -40,7 +40,7 @@
               <div class="input-with-unit"><input id="blendMeltMass" type="text" inputmode="decimal" value="500"><select id="blendMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div>
             </label>
             <label>天秤 <button class="help-dot" data-help="scale" aria-label="天秤ヘルプ">?</button><select id="blendScale"></select></label>
-            <label>丸め方式<select id="blendRounding"><option value="half-up">最近傍</option><option value="ceil">切り上げ</option><option value="floor">切り捨て</option></select></label>
+            <label>丸め方式<select id="blendRounding"><option value="half-up">四捨五入</option><option value="ceil">切り上げ</option><option value="floor">切り捨て</option></select></label>
           </div>
         </section>
         <section class="panel summary-panel" id="blendSummary">
@@ -57,8 +57,10 @@
       </section>
 
       <section class="panel hidden" id="blendDetailPanel">
-        <div class="panel-heading"><h2>計算内容</h2><button id="toggleBlendDetail" class="ghost">閉じる</button></div>
-        <div id="blendDetail"></div>
+        <details id="blendDetailDisclosure" class="formula-details">
+          <summary>計算過程（数式）を表示</summary>
+          <div id="blendDetail" class="formula-content"></div>
+        </details>
       </section>
     </section>
 
@@ -151,7 +153,7 @@
 
       <section class="panel">
         <div class="panel-heading"><h2>添加材マスタ</h2></div>
-        <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 5N Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addMaker" placeholder="メーカー(任意)"><button class="secondary" type="submit">追加</button></form>
+        <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 純Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addMaker" placeholder="メーカー(任意)"><button class="secondary" type="submit">追加</button></form>
         <div class="table-wrap"><table><thead><tr><th>名称</th><th>分類</th><th>主元素</th><th>含有率</th><th>メーカー</th><th>有効</th><th></th></tr></thead><tbody id="additiveRows"></tbody></table></div>
       </section>
 
@@ -171,9 +173,9 @@
           <h2 id="h-purpose">アプリの目的</h2><p>純Al～高純度Alを母材とし、Cu・Si・Ti等を添加する配合作業を支援します。配合計算、添加確認、歩留まり逆算、希釈計算を1つのPWAで扱います。</p>
           <h2 id="h-basic">基本的な配合計算</h2><ol><li>溶湯量と天秤を設定します。</li><li>元素ごとに現在濃度と目標濃度を入力します。</li><li>添加材と目的元素含有率、歩留まりを設定します。</li><li>「計算」で理論添加量、推奨秤量値、丸め後予想濃度を確認します。</li></ol>
           <h2 id="h-units">ppm / wt% / ppb</h2><p>内部ではすべて質量分率に変換します。1 wt% = 10,000 ppm = 10,000,000 ppbです。表示単位が異なっても同じ質量基準として計算します。</p>
-          <h2 id="h-additive">純元素と母合金</h2><p>純元素は例として5N Cu = 99.999 wt%のように目的元素含有率を登録します。母合金はAl-5TiならTi 5.000 wt%として登録します。Ver.1.0では主目的元素のみを計算対象とし、副次成分の連成はVer.2.0対象です。</p>
+          <h2 id="h-additive">純元素と母合金</h2><p>純元素は、使用する添加材の分析値または保証純度に応じて目的元素含有率を登録します。母合金はAl-5TiならTi 5.000 wt%として登録します。Ver.1.0では主目的元素のみを計算対象とし、副次成分の連成はVer.2.0対象です。</p>
           <h2 id="h-yield">添加歩留まり</h2><p>添加した目的元素のうち、計算上溶湯中に有効残留した割合です。100%では全量有効とみなします。逆算値が0%未満または100%超でも自動補正はしません。</p>
-          <h2 id="h-round">天秤分解能と秤量丸め</h2><p>理論値とは別に、天秤分解能に基づく下側・最近傍・上側の秤量候補を再計算します。表示の丸めは内部計算精度に影響しません。</p>
+          <h2 id="h-round">天秤分解能と秤量丸め</h2><p>理論値とは別に、天秤分解能に基づく下側・四捨五入・上側の秤量候補を再計算します。表示の丸めは内部計算精度に影響しません。</p>
           <h2 id="h-dilution">希釈計算</h2><p>現在濃度が目標濃度を上回った場合、希釈用Alの目的元素濃度も考慮して必要追加量を求めます。希釈材濃度は目標濃度より低い必要があります。</p>
           <h2 id="h-formulas">計算式（標準モデルA）</h2><pre>C1 = (M*C0 + x*P*Y) / (M+x)
 
@@ -197,7 +199,7 @@ Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度�
 <div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
-<script>window.APP_VERSION='1.0.0';</script>
+<script>window.APP_VERSION='1.0.2';</script>
 <script src="js/vendor/decimal-lite.js"></script>
 <script src="js/calc-engine.js"></script>
 <script src="js/storage.js"></script>
