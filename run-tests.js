@@ -60,14 +60,14 @@ eq(D.from('1.231').quantize('0.01','ceil'),'1.24','ceil');
 eq(D.from('1.239').quantize('0.01','floor'),'1.23','floor');
 
 
-// Ver.1.0.9 static integration checks
+// Ver.1.0.10 static integration checks
 const fs=require('fs');
 const path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'..','js','app.js'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'..','css','app.css'),'utf8');
 function has(text,needle,msg){assert.ok(text.includes(needle),msg||`missing: ${needle}`);passed++;}
-has(html,'Ver.1.0.9','version label');
+has(html,'Ver.1.0.10','version label');
 has(css,'.brand small{display:block;opacity:.82;font-size:10px','mobile version remains visible');
 has(html,'id="blendPresetSelect"','preset selector');
 has(html,'id="exportScaleCsv"','scale CSV export');
@@ -80,18 +80,19 @@ has(app,'計算履歴の自動保存に失敗しました。','history save fail
 has(app,"type:'歩留まり逆算'",'automatic yield calculation history');
 has(app,'class="ghost scale-edit"','scale edit action');
 has(app,'class="ghost add-edit"','additive edit action');
-has(app,'summary-element-grid','multi-element summary');
+has(html,'id="blendSummaryGrid" class="summary-grid"','summary grid mount');
+has(app,"grid.querySelectorAll('.summary-element-item')",'summary cleanup');
+has(app,"card.className='summary-element-item'",'summary per-element card creation');
 has(app,'<select class="row-element row-element-select"','blend element is select-only');
+has(css,'.element-select-field::after{content:"▼"','element dropdown arrow is always visible');
 assert.ok(!app.includes('<input class="row-element"'),'blend element must not be free-text input');passed++;
 has(app,"availableElements().includes(element)",'master-only element validation');
 has(app,'元素は添加材マスタの主元素からドロップダウンで選択してください。','dropdown validation message');
 assert.ok((app.match(/persistCalculationHistory\(/g)||[]).length>=5,'all calculation paths must use common history persistence');passed++;
-has(app,'${esc(label)} 添加量','element summary labels include 添加量');
+has(app,'`${String(r?.element||`元素${i+1}`)} 添加量`','element summary labels include 添加量');
 has(app,'renderBlendElementSummary(rows,preferred,res,scale);','summary uses collected input rows');
-has(html,'id="blendElementSummary" class="summary-element-list"','summary container is not permanently hidden');
-assert.ok(!html.includes('id="blendElementSummary" class="summary-element-list hidden"'),'summary container must not start hidden');passed++;
-has(html,'js/app.js?v=1.0.9','app.js cache busting');
-has(html,'css/app.css?v=1.0.9','css cache busting');
+has(html,'js/app.js?v=1.0.10','app.js cache busting');
+has(html,'css/app.css?v=1.0.10','css cache busting');
 
 console.log(`PASS: ${passed} assertions`);
 console.log(`Sample theoretical Cu addition = ${x.toFixed(9)} g`);

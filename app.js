@@ -225,22 +225,28 @@ async function collectBlendRows(){
   }
   return rows;
 }
+function clearBlendElementSummary(){
+  const grid=byId('blendSummaryGrid');
+  if(!grid)return;
+  grid.querySelectorAll('.summary-element-item').forEach(node=>node.remove());
+}
 function renderBlendElementSummary(rows,preferred,res,scale){
-  const elementSummary=byId('blendElementSummary');
-  if(!elementSummary)return;
+  const grid=byId('blendSummaryGrid');
+  if(!grid)return;
+  clearBlendElementSummary();
   const list=Array.isArray(rows)?rows:[];
   const masses=Array.isArray(preferred)?preferred:[];
-  if(list.length<2){
-    elementSummary.innerHTML='';
-    return;
-  }
-  const items=list.map((r,i)=>{
-    const mass=masses[i];
-    const label=String(r?.element||`元素${i+1}`);
-    const value=mass==null?'—':fmtMassByScale(mass,res,scaleUnit(scale));
-    return `<div class="summary-element-item"><span>${esc(label)} 添加量</span><strong>${esc(value)}</strong></div>`;
-  }).join('');
-  elementSummary.innerHTML=`<strong>元素別添加量</strong><div class="summary-element-grid">${items}</div>`;
+  if(list.length<2)return;
+  list.forEach((r,i)=>{
+    const card=document.createElement('div');
+    card.className='summary-element-item';
+    const label=document.createElement('span');
+    label.textContent=`${String(r?.element||`元素${i+1}`)} 添加量`;
+    const value=document.createElement('strong');
+    value.textContent=masses[i]==null?'—':fmtMassByScale(masses[i],res,scaleUnit(scale));
+    card.append(label,value);
+    grid.appendChild(card);
+  });
 }
 async function calcBlend(){
   const msg=byId('blendGlobalMessage');
@@ -276,7 +282,7 @@ async function calcBlend(){
     }
   }catch(e){
     state.lastBlend=null;byId('saveBlendHistory').disabled=true;
-    byId('blendElementSummary').innerHTML='';
+    clearBlendElementSummary();
     setMessage(msg,e.message,'error');
   }
 }

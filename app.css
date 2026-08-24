@@ -34,12 +34,6 @@ button.primary,button.secondary,button.ghost{min-height:40px;border-radius:9px;p
 @media(max-width:760px){.scale-resolution-input{min-width:0;width:100%}}
 
 
-.summary-element-list{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:#f8fbfc;padding:10px 12px}
-.summary-element-list>strong{display:block;font-size:13px;margin-bottom:7px}
-.summary-element-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-.summary-element-grid>div{display:flex;justify-content:space-between;gap:10px;padding:7px 9px;background:#fff;border:1px solid #e3eaee;border-radius:8px}
-.summary-element-grid span{font-weight:700}
-.summary-element-grid strong{white-space:nowrap}
 .preset-panel .compact-note{margin:3px 0 0}
 .preset-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .preset-controls select{min-width:240px;flex:1}
@@ -52,8 +46,10 @@ button.primary,button.secondary,button.ghost{min-height:40px;border-radius:9px;p
 }
 
 
-/* Ver.1.0.9: master-only element dropdown and robust multi-element summary */
-select.row-element-select{appearance:auto;-webkit-appearance:menulist;cursor:pointer;padding-right:30px;background-color:#fff;border-color:#9fb2bd}
+/* Ver.1.0.10: select-only element field + per-element summary cards */
+select.row-element-select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:34px;background-color:#fff;border-color:#7f9aa8}
 .element-select-field{position:relative}
-.summary-element-list:empty{display:none}
-.summary-element-list:not(:empty){display:block}
+.element-select-field::after{content:"▼";position:absolute;right:12px;bottom:14px;font-size:11px;line-height:1;color:#294b5c;pointer-events:none}
+.summary-grid>.summary-element-item{background:#eef6f8;border:1px solid #cfe0e7}
+.summary-grid>.summary-element-item span{color:#294f61;font-weight:700}
+.summary-grid>.summary-element-item strong{color:#0f3447}
