@@ -489,6 +489,54 @@ function bindDilution(){
   });
 }
 
+function requireCsvHeaders(parsed,required,label){
+  const missing=required.filter(h=>!parsed.headers.includes(h));
+  if(missing.length)throw new Error(`${label}CSVに必要な列がありません: ${missing.join('、')}`);
+}
+function parseCsvActive(value,rowNumber){
+  const v=String(value??'').trim().toLowerCase();
+  if(v===''||v==='有効'||v==='true'||v==='1'||v==='yes'||v==='y')return true;
+  if(v==='無効'||v==='false'||v==='0'||v==='no'||v==='n')return false;
+  throw new Error(`${rowNumber}行目: 有効列は「有効」または「無効」で指定してください。`);
+}
+function parseScaleMasterCsv(text){
+  const parsed=X.csvObjects(text);requireCsvHeaders(parsed,['ID','名称','分解能','単位','有効'],'天秤マスタ');
+  if(!parsed.data.length)throw new Error('天秤マスタCSVにデータ行がありません。');
+  const seen=new Set();
+  return parsed.data.map(r=>{
+    const n=r.__rowNumber;const name=String(r['名称']??'').trim();const rawId=String(r['ID']??'').trim();const id=rawId||S.uid('scale');
+    if(seen.has(id))throw new Error(`${n}行目: ID「${id}」がCSV内で重複しています。`);seen.add(id);
+    if(!name)throw new Error(`${n}行目: 名称が空欄です。`);
+    const unit=String(r['単位']??'').trim().toLowerCase();if(unit!=='g'&&unit!=='kg')throw new Error(`${n}行目: 単位は g または kg を指定してください。`);
+    const resolution=String(r['分解能']??'').trim();if(!resolution)throw new Error(`${n}行目: 分解能が空欄です。`);
+    let resolutionG;try{if(D.from(resolution).lte(0))throw new Error();resolutionG=E.massToGram(resolution,unit);}catch(_){throw new Error(`${n}行目: 分解能は0より大きい数値で指定してください。`);}
+    return {id,name,resolutionValue:D.from(resolution).toString(),resolutionUnit:unit,resolutionG:resolutionG.toString(),active:parseCsvActive(r['有効'],n)};
+  });
+}
+function parseAdditiveMasterCsv(text){
+  const parsed=X.csvObjects(text);requireCsvHeaders(parsed,['ID','名称','分類','主元素','含有率_wt%','備考','有効'],'添加材マスタ');
+  if(!parsed.data.length)throw new Error('添加材マスタCSVにデータ行がありません。');
+  const seen=new Set();
+  return parsed.data.map(r=>{
+    const n=r.__rowNumber;const name=String(r['名称']??'').trim();const element=String(r['主元素']??'').trim();const rawId=String(r['ID']??'').trim();const id=rawId||S.uid('add');
+    if(seen.has(id))throw new Error(`${n}行目: ID「${id}」がCSV内で重複しています。`);seen.add(id);
+    if(!name)throw new Error(`${n}行目: 名称が空欄です。`);if(!element)throw new Error(`${n}行目: 主元素が空欄です。`);
+    const cls=String(r['分類']??'').trim().toLowerCase();let type;if(cls==='純元素'||cls==='pure')type='pure';else if(cls==='母合金'||cls==='master')type='master';else throw new Error(`${n}行目: 分類は「純元素」または「母合金」を指定してください。`);
+    const pct=String(r['含有率_wt%']??'').trim();try{if(D.from(pct).lte(0)||D.from(pct).gt(100))throw new Error();}catch(_){throw new Error(`${n}行目: 含有率_wt%は0より大きく100以下の数値で指定してください。`);}
+    return {id,name,type,mainElement:element,components:[{element,wtPercent:D.from(pct).toString()}],purity:type==='pure'?D.from(pct).toString():'',maker:'',partNo:'',note:String(r['備考']??'').trim(),active:parseCsvActive(r['有効'],n)};
+  });
+}
+async function restoreScaleMasterCsv(file){
+  const rows=parseScaleMasterCsv(await file.text());
+  if(!confirm(`天秤マスタをCSVから${rows.length}件復元します。\n同じIDは上書き、未登録IDは追加されます。CSVにない既存データは残ります。\n続行しますか？`))return false;
+  await S.putMany('scales',rows);resetScaleForm();await refreshMasters();toast(`天秤マスタを${rows.length}件復元しました。`);return true;
+}
+async function restoreAdditiveMasterCsv(file){
+  const rows=parseAdditiveMasterCsv(await file.text());
+  if(!confirm(`添加材マスタをCSVから${rows.length}件復元します。\n同じIDは上書き、未登録IDは追加されます。CSVにない既存データは残ります。\n続行しますか？`))return false;
+  await S.putMany('additives',rows);resetAdditiveForm();await refreshMasters();toast(`添加材マスタを${rows.length}件復元しました。`);return true;
+}
+
 function resetScaleForm(){
   state.editingScaleId=null;byId('scaleForm').reset();byId('scaleResolutionUnit').value='g';byId('scaleSubmitBtn').textContent='追加';byId('cancelScaleEdit').classList.add('hidden');
 }
@@ -530,6 +578,11 @@ function bindSettings(){
 
   byId('exportScaleCsv').addEventListener('click',async()=>{const rows=await S.getAll('scales');X.exportCsv(['ID','名称','分解能','単位','分解能_g','有効'],rows.map(x=>[x.id,x.name,scaleResolutionValue(x).toString(),scaleUnit(x),x.resolutionG,x.active!==false?'有効':'無効']),`Al配合計算_天秤マスタ_${X.dateStamp()}.csv`)});
   byId('exportAdditiveCsv').addEventListener('click',async()=>{const rows=await S.getAll('additives');X.exportCsv(['ID','名称','分類','主元素','含有率_wt%','備考','有効'],rows.map(x=>[x.id,x.name,x.type==='pure'?'純元素':'母合金',x.mainElement,additivePct(x,x.mainElement),x.note||x.maker||'',x.active!==false?'有効':'無効']),`Al配合計算_添加材マスタ_${X.dateStamp()}.csv`)});
+
+  byId('importScaleCsvBtn').addEventListener('click',()=>byId('importScaleCsv').click());
+  byId('importScaleCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreScaleMasterCsv(f);}catch(err){toast('天秤マスタCSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
+  byId('importAdditiveCsvBtn').addEventListener('click',()=>byId('importAdditiveCsv').click());
+  byId('importAdditiveCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreAdditiveMasterCsv(f);}catch(err){toast('添加材マスタCSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
 
   byId('exportJson').addEventListener('click',async()=>X.exportJson(await S.exportAll()));
   byId('exportYieldCsv').addEventListener('click',async()=>{const r=await S.getAll('yieldRecords');X.exportCsv(['日付','元素','添加材','溶湯量_g','添加前_質量分率','添加後_質量分率','添加量_g','歩留まり_%','採用','メモ'],r.map(x=>[x.date,x.element,x.additiveName,x.meltMassG,x.beforeFraction,x.afterFraction,x.additionMassG,D.from(x.yieldFraction).mul(100).toString(),x.adopted!==false?'採用':'除外',x.memo||'']),`Al配合計算_歩留まり実績_${X.dateStamp()}.csv`)});

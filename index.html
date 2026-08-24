@@ -9,12 +9,12 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/app.css?v=1.1.0">
+  <link rel="stylesheet" href="css/app.css?v=1.2.0">
 </head>
 <body>
 <div id="appShell">
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.1.0</small></div></div>
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.2.0</small></div></div>
     <div class="top-actions"><button class="ghost" data-action="open-help">? ヘルプ</button></div>
   </header>
 
@@ -173,13 +173,15 @@
       </div>
 
       <section class="panel">
-        <div class="panel-heading"><h2>天秤マスタ</h2><button id="exportScaleCsv" class="ghost" type="button">CSV出力</button></div>
+        <div class="panel-heading"><h2>天秤マスタ</h2><div class="panel-heading-actions"><button id="exportScaleCsv" class="ghost" type="button">CSV出力</button><button id="importScaleCsvBtn" class="secondary" type="button">CSV復元</button><input id="importScaleCsv" class="hidden" type="file" accept=".csv,text/csv"></div></div>
+        <p class="muted master-csv-note">CSV復元は、CSV内のIDと同じ登録を上書きし、未登録IDを追加します。CSVにない既存データは残ります。</p>
         <form id="scaleForm" class="inline-form"><input id="scaleName" placeholder="名称 例: 天秤A" required><div class="input-with-unit scale-resolution-input"><input id="scaleResolution" placeholder="分解能 例: 0.01" inputmode="decimal" required><select id="scaleResolutionUnit" aria-label="天秤分解能の単位"><option value="g">g</option><option value="kg">kg</option></select></div><button id="scaleSubmitBtn" class="secondary" type="submit">追加</button><button id="cancelScaleEdit" class="ghost hidden" type="button">編集取消</button></form>
         <div class="table-wrap"><table><thead><tr><th>名称</th><th>分解能</th><th>有効</th><th>操作</th></tr></thead><tbody id="scaleRows"></tbody></table></div>
       </section>
 
       <section class="panel">
-        <div class="panel-heading"><h2>添加材マスタ</h2><button id="exportAdditiveCsv" class="ghost" type="button">CSV出力</button></div>
+        <div class="panel-heading"><h2>添加材マスタ</h2><div class="panel-heading-actions"><button id="exportAdditiveCsv" class="ghost" type="button">CSV出力</button><button id="importAdditiveCsvBtn" class="secondary" type="button">CSV復元</button><input id="importAdditiveCsv" class="hidden" type="file" accept=".csv,text/csv"></div></div>
+        <p class="muted master-csv-note">CSV復元は、CSV内のIDと同じ登録を上書きし、未登録IDを追加します。CSVにない既存データは残ります。</p>
         <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 純Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addNote" placeholder="備考(任意)"><button id="additiveSubmitBtn" class="secondary" type="submit">追加</button><button id="cancelAdditiveEdit" class="ghost hidden" type="button">編集取消</button></form>
         <div class="table-wrap"><table><thead><tr><th>名称</th><th>分類</th><th>主元素</th><th>含有率</th><th>備考</th><th>有効</th><th>操作</th></tr></thead><tbody id="additiveRows"></tbody></table></div>
       </section>
@@ -226,12 +228,12 @@ Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度�
 <div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
-<script>window.APP_VERSION='1.1.0';</script>
-<script src="js/vendor/decimal-lite.js?v=1.1.0"></script>
-<script src="js/calc-engine.js?v=1.1.0"></script>
-<script src="js/storage.js?v=1.1.0"></script>
-<script src="js/export.js?v=1.1.0"></script>
-<script src="js/tutorial.js?v=1.1.0"></script>
-<script src="js/app.js?v=1.1.0"></script>
+<script>window.APP_VERSION='1.2.0';</script>
+<script src="js/vendor/decimal-lite.js?v=1.2.0"></script>
+<script src="js/calc-engine.js?v=1.2.0"></script>
+<script src="js/storage.js?v=1.2.0"></script>
+<script src="js/export.js?v=1.2.0"></script>
+<script src="js/tutorial.js?v=1.2.0"></script>
+<script src="js/app.js?v=1.2.0"></script>
 </body>
 </html>

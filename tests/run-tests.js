@@ -60,15 +60,16 @@ eq(D.from('1.231').quantize('0.01','ceil'),'1.24','ceil');
 eq(D.from('1.239').quantize('0.01','floor'),'1.23','floor');
 
 
-// Ver.1.1.0 static integration checks
+// Ver.1.2.0 static integration checks
 const fs=require('fs');
 const path=require('path');
+const X=require('../js/export.js');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'..','js','app.js'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'..','css','app.css'),'utf8');
 const storage=fs.readFileSync(path.join(__dirname,'..','js','storage.js'),'utf8');
 function has(text,needle,msg){assert.ok(text.includes(needle),msg||`missing: ${needle}`);passed++;}
-has(html,'Ver.1.1.0','version label');
+has(html,'Ver.1.2.0','version label');
 has(css,'.brand small{display:block;opacity:.82;font-size:10px','mobile version remains visible');
 has(html,'id="blendPresetSelect"','preset selector');
 has(html,'id="exportScaleCsv"','scale CSV export');
@@ -91,8 +92,8 @@ has(app,"availableElements().includes(element)",'master-only element validation'
 has(app,'元素は添加材マスタの主元素からドロップダウンで選択してください。','dropdown validation message');
 assert.ok((app.match(/persistCalculationHistory\(/g)||[]).length>=5,'all calculation paths must use common history persistence');passed++;
 has(app,'`${String(r?.element||`元素${i+1}`)} 添加量`','element summary labels include 添加量');
-has(html,'js/app.js?v=1.1.0','app.js cache busting');
-has(html,'css/app.css?v=1.1.0','css cache busting');
+has(html,'js/app.js?v=1.2.0','app.js cache busting');
+has(html,'css/app.css?v=1.2.0','css cache busting');
 has(html,'id="blendSummaryAdditionUnit"','summary addition unit selector');
 has(html,'<option value="auto">自動</option>','summary automatic unit option');
 has(html,'<option value="mg">mg</option>','summary mg unit option');
@@ -103,6 +104,28 @@ has(app,'fmtMassByScale(totalPreferred,res,getSummaryAdditionUnit())','total add
 has(app,'renderBlendElementSummary(rows,preferred,res,scale,getSummaryAdditionUnit())','element additions honor summary unit');
 has(storage,"summaryAdditionUnit: 'auto'",'summary unit default setting');
 has(app,'state.settings.summaryAdditionUnit=summaryUnit.value','summary unit persists');
+
+
+// Ver.1.2.0 CSV restore/parser checks
+has(html,'id="importScaleCsvBtn"','scale CSV restore button');
+has(html,'id="importAdditiveCsvBtn"','additive CSV restore button');
+has(html,'id="importScaleCsv"','scale CSV file input');
+has(html,'id="importAdditiveCsv"','additive CSV file input');
+has(app,'function parseScaleMasterCsv(text)','scale CSV validator');
+has(app,'function parseAdditiveMasterCsv(text)','additive CSV validator');
+has(app,"await S.putMany('scales',rows)",'scale CSV bulk restore');
+has(app,"await S.putMany('additives',rows)",'additive CSV bulk restore');
+has(app,'CSVにない既存データは残ります','non-destructive restore notice');
+has(storage,'async function putMany(store, values)','IndexedDB bulk put');
+has(storage,'put, putMany, remove','putMany exported');
+has(fs.readFileSync(path.join(__dirname,'..','js','export.js'),'utf8'),'function parseCsv(text)','CSV parser exists');
+
+const parsed=X.csvObjects('\ufeffID,名称,備考\r\n1,"天秤,A","改行\nあり"\r\n2,"引用符""テスト",通常');
+assert.deepStrictEqual(parsed.headers,['ID','名称','備考']);passed++;
+assert.strictEqual(parsed.data[0]['名称'],'天秤,A');passed++;
+assert.strictEqual(parsed.data[0]['備考'],'改行\nあり');passed++;
+assert.strictEqual(parsed.data[1]['名称'],'引用符"テスト');passed++;
+assert.throws(()=>X.parseCsv('ID,名称\n1,"未完'),/引用符が閉じられていません/);passed++;
 
 console.log(`PASS: ${passed} assertions`);
 console.log(`Sample theoretical Cu addition = ${x.toFixed(9)} g`);

@@ -71,6 +71,11 @@
     });
   }
   async function put(store, value) { await tx(store, 'readwrite', s => s.put(value)); return value; }
+  async function putMany(store, values) {
+    const rows = Array.isArray(values) ? values : [];
+    await tx(store, 'readwrite', s => { rows.forEach(value => s.put(value)); });
+    return rows;
+  }
   async function remove(store, key) { await tx(store, 'readwrite', s => s.delete(key)); }
   async function clear(store) { await tx(store, 'readwrite', s => s.clear()); }
 
@@ -140,7 +145,7 @@
     const data = {};
     for (const s of STORES) data[s] = await getAll(s);
     return {
-      appVersion: root.APP_VERSION || '1.1.0', dbSchemaVersion: DB_VERSION,
+      appVersion: root.APP_VERSION || '1.2.0', dbSchemaVersion: DB_VERSION,
       exportedAt: new Date().toISOString(), settings: getSettings(), data
     };
   }
@@ -169,5 +174,5 @@
     if (backup.settings) saveSettings({ ...getSettings(), ...backup.settings, decimals:{...getSettings().decimals, ...(backup.settings.decimals||{})} });
   }
 
-  root.AppStorage = { DB_NAME, DB_VERSION, STORES, uid, openDB, getAll, get, put, remove, clear, getSettings, saveSettings, seedDefaults, migrateAppData, exportAll, importAll };
+  root.AppStorage = { DB_NAME, DB_VERSION, STORES, uid, openDB, getAll, get, put, putMany, remove, clear, getSettings, saveSettings, seedDefaults, migrateAppData, exportAll, importAll };
 })(typeof self !== 'undefined' ? self : window);
