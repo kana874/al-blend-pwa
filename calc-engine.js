@@ -166,7 +166,7 @@
   }
 
   return {
-    VERSION: '1.0.7', Decimal: D, massToGram, gramToMass, gramToDisplayMass,
+    VERSION: '1.0.9', Decimal: D, massToGram, gramToMass, gramToDisplayMass,
     concentrationToFraction, fractionToConcentration, percentToFraction,
     calculateAdditionMass, calculateFinalConcentration, calculateYield,
     calculateDilutionMass, calculateRoundedScenarios, calculateMultiElementBatch,

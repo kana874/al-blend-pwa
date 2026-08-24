@@ -1,6 +1,6 @@
 {
   "name":"al-blend-pwa-v1",
-  "version":"1.0.8",
+  "version":"1.0.9",
   "private":true,
   "scripts":{"test":"node tests/run-tests.js"}
 }

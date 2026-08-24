@@ -149,7 +149,7 @@ async function applyBlendPreset(){
   (d.rows||[]).forEach(r=>addBlendRow({...r,current:''}));
   if(!(d.rows||[]).length)addBlendRow({element:availableElements()[0]||''});
   byId('blendTotalAddition').textContent='—';byId('blendFinalMass').textContent='—';
-  byId('blendElementSummary').innerHTML='';byId('blendElementSummary').classList.add('hidden');
+  byId('blendElementSummary').innerHTML='';
   byId('blendDetailPanel').classList.add('hidden');setMessage(byId('blendGlobalMessage'),'溶湯量と現在濃度を入力して計算してください。','muted');
   if(missingElements.length)toast(`プリセットを読み込みました。マスタにない元素（${missingElements.join(' / ')}）は再選択してください。`);else toast(`プリセット「${preset.name}」を読み込みました。`);
 }
@@ -176,7 +176,7 @@ function addBlendRow(preset={}){
   div.innerHTML=`
     <div class="element-header"><div class="element-title"><span class="element-index">${rowSeq}</span><strong>元素条件</strong></div><button class="ghost remove-row" type="button">削除</button></div>
     <div class="element-grid">
-      <label>元素<select class="row-element" aria-label="元素">${elementOptions(selectedElement)}</select></label>
+      <label class="element-select-field">元素<select class="row-element row-element-select" aria-label="元素" required>${elementOptions(selectedElement)}</select></label>
       <label>現在濃度<div class="input-with-unit"><input class="row-current" inputmode="decimal" value="${esc(preset.current??'')}"/><select class="row-current-unit"><option ${preset.currentUnit==='wt%'?'selected':''}>wt%</option><option ${!preset.currentUnit||preset.currentUnit==='ppm'?'selected':''}>ppm</option><option ${preset.currentUnit==='ppb'?'selected':''}>ppb</option></select></div></label>
       <label>目標濃度<div class="input-with-unit"><input class="row-target" inputmode="decimal" value="${esc(preset.target??'')}"/><select class="row-target-unit"><option ${preset.targetUnit==='wt%'?'selected':''}>wt%</option><option ${!preset.targetUnit||preset.targetUnit==='ppm'?'selected':''}>ppm</option><option ${preset.targetUnit==='ppb'?'selected':''}>ppb</option></select></div></label>
       <label class="wide">添加材 <button class="help-dot" data-help="additive">?</button><select class="row-additive"></select></label>
@@ -228,13 +228,19 @@ async function collectBlendRows(){
 function renderBlendElementSummary(rows,preferred,res,scale){
   const elementSummary=byId('blendElementSummary');
   if(!elementSummary)return;
-  if(rows.length<2){
-    elementSummary.classList.add('hidden');
+  const list=Array.isArray(rows)?rows:[];
+  const masses=Array.isArray(preferred)?preferred:[];
+  if(list.length<2){
     elementSummary.innerHTML='';
     return;
   }
-  elementSummary.innerHTML=`<strong>元素別添加量</strong><div class="summary-element-grid">${rows.map((r,i)=>`<div class="summary-element-item"><span>${esc(r.element)} 添加量</span><strong>${esc(fmtMassByScale(preferred[i],res,scaleUnit(scale)))}</strong></div>`).join('')}</div>`;
-  elementSummary.classList.remove('hidden');
+  const items=list.map((r,i)=>{
+    const mass=masses[i];
+    const label=String(r?.element||`元素${i+1}`);
+    const value=mass==null?'—':fmtMassByScale(mass,res,scaleUnit(scale));
+    return `<div class="summary-element-item"><span>${esc(label)} 添加量</span><strong>${esc(value)}</strong></div>`;
+  }).join('');
+  elementSummary.innerHTML=`<strong>元素別添加量</strong><div class="summary-element-grid">${items}</div>`;
 }
 async function calcBlend(){
   const msg=byId('blendGlobalMessage');
@@ -247,7 +253,7 @@ async function calcBlend(){
     const totalPreferred=preferred.reduce((s,x)=>s.add(x),D.zero());const finalMass=M.add(totalPreferred);
     byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res,scaleUnit(scale));
     byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res,byId('blendMeltUnit').value);
-    renderBlendElementSummary(batch.rows,preferred,res,scale);
+    renderBlendElementSummary(rows,preferred,res,scale);
     batch.rows.forEach((r,i)=>{
       const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['四捨五入',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
       const unique=[];const seen=new Set();for(const [name,mass] of candidates){if(seen.has(mass.toString()))continue;seen.add(mass.toString());const ms=preferred.slice();ms[i]=mass;const fin=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:ms})[i];unique.push({name,mass,fin});}
@@ -270,7 +276,7 @@ async function calcBlend(){
     }
   }catch(e){
     state.lastBlend=null;byId('saveBlendHistory').disabled=true;
-    byId('blendElementSummary').classList.add('hidden');byId('blendElementSummary').innerHTML='';
+    byId('blendElementSummary').innerHTML='';
     setMessage(msg,e.message,'error');
   }
 }

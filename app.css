@@ -50,3 +50,10 @@ button.primary,button.secondary,button.ghost{min-height:40px;border-radius:9px;p
   .preset-controls{align-items:stretch}
   .preset-controls select{min-width:0;width:100%}
 }
+
+
+/* Ver.1.0.9: master-only element dropdown and robust multi-element summary */
+select.row-element-select{appearance:auto;-webkit-appearance:menulist;cursor:pointer;padding-right:30px;background-color:#fff;border-color:#9fb2bd}
+.element-select-field{position:relative}
+.summary-element-list:empty{display:none}
+.summary-element-list:not(:empty){display:block}
