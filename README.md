@@ -1,4 +1,4 @@
-# Al 配合計算 PWA Ver.1.0.7
+# Al 配合計算 PWA Ver.1.0.8
 
 純Al～高純度Alを母材とした、Cu / Si / Ti等の微量添加向け配合支援PWAです。
 

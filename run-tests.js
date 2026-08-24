@@ -60,13 +60,15 @@ eq(D.from('1.231').quantize('0.01','ceil'),'1.24','ceil');
 eq(D.from('1.239').quantize('0.01','floor'),'1.23','floor');
 
 
-// Ver.1.0.7 static integration checks
+// Ver.1.0.8 static integration checks
 const fs=require('fs');
 const path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'..','js','app.js'),'utf8');
+const css=fs.readFileSync(path.join(__dirname,'..','css','app.css'),'utf8');
 function has(text,needle,msg){assert.ok(text.includes(needle),msg||`missing: ${needle}`);passed++;}
-has(html,'Ver.1.0.7','version label');
+has(html,'Ver.1.0.8','version label');
+has(css,'.brand small{display:block;opacity:.82;font-size:10px','mobile version remains visible');
 has(html,'id="blendPresetSelect"','preset selector');
 has(html,'id="exportScaleCsv"','scale CSV export');
 has(html,'id="exportAdditiveCsv"','additive CSV export');
