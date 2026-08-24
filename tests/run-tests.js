@@ -60,14 +60,15 @@ eq(D.from('1.231').quantize('0.01','ceil'),'1.24','ceil');
 eq(D.from('1.239').quantize('0.01','floor'),'1.23','floor');
 
 
-// Ver.1.0.10 static integration checks
+// Ver.1.1.0 static integration checks
 const fs=require('fs');
 const path=require('path');
 const html=fs.readFileSync(path.join(__dirname,'..','index.html'),'utf8');
 const app=fs.readFileSync(path.join(__dirname,'..','js','app.js'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'..','css','app.css'),'utf8');
+const storage=fs.readFileSync(path.join(__dirname,'..','js','storage.js'),'utf8');
 function has(text,needle,msg){assert.ok(text.includes(needle),msg||`missing: ${needle}`);passed++;}
-has(html,'Ver.1.0.10','version label');
+has(html,'Ver.1.1.0','version label');
 has(css,'.brand small{display:block;opacity:.82;font-size:10px','mobile version remains visible');
 has(html,'id="blendPresetSelect"','preset selector');
 has(html,'id="exportScaleCsv"','scale CSV export');
@@ -90,9 +91,18 @@ has(app,"availableElements().includes(element)",'master-only element validation'
 has(app,'元素は添加材マスタの主元素からドロップダウンで選択してください。','dropdown validation message');
 assert.ok((app.match(/persistCalculationHistory\(/g)||[]).length>=5,'all calculation paths must use common history persistence');passed++;
 has(app,'`${String(r?.element||`元素${i+1}`)} 添加量`','element summary labels include 添加量');
-has(app,'renderBlendElementSummary(rows,preferred,res,scale);','summary uses collected input rows');
-has(html,'js/app.js?v=1.0.10','app.js cache busting');
-has(html,'css/app.css?v=1.0.10','css cache busting');
+has(html,'js/app.js?v=1.1.0','app.js cache busting');
+has(html,'css/app.css?v=1.1.0','css cache busting');
+has(html,'id="blendSummaryAdditionUnit"','summary addition unit selector');
+has(html,'<option value="auto">自動</option>','summary automatic unit option');
+has(html,'<option value="mg">mg</option>','summary mg unit option');
+has(html,'<option value="kg">kg</option>','summary kg unit option');
+has(app,'function getSummaryAdditionUnit()','summary unit resolver');
+has(app,'function refreshBlendSummaryDisplay()','summary rerender on unit change');
+has(app,'fmtMassByScale(totalPreferred,res,getSummaryAdditionUnit())','total addition honors summary unit');
+has(app,'renderBlendElementSummary(rows,preferred,res,scale,getSummaryAdditionUnit())','element additions honor summary unit');
+has(storage,"summaryAdditionUnit: 'auto'",'summary unit default setting');
+has(app,'state.settings.summaryAdditionUnit=summaryUnit.value','summary unit persists');
 
 console.log(`PASS: ${passed} assertions`);
 console.log(`Sample theoretical Cu addition = ${x.toFixed(9)} g`);

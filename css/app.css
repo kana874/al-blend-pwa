@@ -53,3 +53,9 @@ select.row-element-select{appearance:none;-webkit-appearance:none;cursor:pointer
 .summary-grid>.summary-element-item{background:#eef6f8;border:1px solid #cfe0e7}
 .summary-grid>.summary-element-item span{color:#294f61;font-weight:700}
 .summary-grid>.summary-element-item strong{color:#0f3447}
+
+/* Ver.1.1.0: result summary addition-unit selector */
+.summary-heading{align-items:flex-end}
+.summary-unit-control{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.summary-unit-control select{min-width:82px;height:36px;padding:6px 28px 6px 9px}
+@media(max-width:760px){.summary-heading{align-items:center}.summary-unit-control{font-size:11px}.summary-unit-control select{min-width:76px;height:34px}}

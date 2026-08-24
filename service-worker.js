@@ -1,6 +1,6 @@
-const CACHE='al-blend-pwa-v1.0.10';
+const CACHE='al-blend-pwa-v1.1.0';
 const ASSETS=[
-  './','./index.html','./css/app.css?v=1.0.10','./js/vendor/decimal-lite.js?v=1.0.10','./js/calc-engine.js?v=1.0.10','./js/storage.js?v=1.0.10','./js/export.js?v=1.0.10','./js/tutorial.js?v=1.0.10','./js/app.js?v=1.0.10','./manifest.json','./icons/icon-192.png','./icons/icon-512.png'
+  './','./index.html','./css/app.css?v=1.1.0','./js/vendor/decimal-lite.js?v=1.1.0','./js/calc-engine.js?v=1.1.0','./js/storage.js?v=1.1.0','./js/export.js?v=1.1.0','./js/tutorial.js?v=1.1.0','./js/app.js?v=1.1.0','./manifest.json','./icons/icon-192.png','./icons/icon-512.png'
 ];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));

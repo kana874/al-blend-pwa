@@ -32,6 +32,7 @@ function scaleUnit(scale){return scale&&scale.resolutionUnit==='kg'?'kg':'g'}
 function scaleResolutionValue(scale){if(scale?.resolutionValue)return D.from(scale.resolutionValue);return E.gramToMass(scale?.resolutionG||'0',scaleUnit(scale))}
 function scaleResolutionText(scale){return `${scaleResolutionValue(scale).toString()} ${scaleUnit(scale)}`}
 function getDecimals(){return state.settings.decimals}
+function getSummaryAdditionUnit(){const sel=byId('blendSummaryAdditionUnit');return sel?.value||state.settings.summaryAdditionUnit||'auto'}
 function fmtD(v,dp){return D.from(v).toFixed(dp)}
 function fmtMass(g,mode='addition'){
   const o=E.gramToDisplayMass(g,'auto'); const dp=mode==='melt'?getDecimals().melt:getDecimals().addition; return `${o.value.toFixed(dp)} ${o.unit}`;
@@ -230,7 +231,7 @@ function clearBlendElementSummary(){
   if(!grid)return;
   grid.querySelectorAll('.summary-element-item').forEach(node=>node.remove());
 }
-function renderBlendElementSummary(rows,preferred,res,scale){
+function renderBlendElementSummary(rows,preferred,res,scale,displayUnit=getSummaryAdditionUnit()){
   const grid=byId('blendSummaryGrid');
   if(!grid)return;
   clearBlendElementSummary();
@@ -243,10 +244,18 @@ function renderBlendElementSummary(rows,preferred,res,scale){
     const label=document.createElement('span');
     label.textContent=`${String(r?.element||`元素${i+1}`)} 添加量`;
     const value=document.createElement('strong');
-    value.textContent=masses[i]==null?'—':fmtMassByScale(masses[i],res,scaleUnit(scale));
+    value.textContent=masses[i]==null?'—':fmtMassByScale(masses[i],res,displayUnit);
     card.append(label,value);
     grid.appendChild(card);
   });
+}
+function refreshBlendSummaryDisplay(){
+  const r=state.lastBlend;if(!r)return;
+  const res=D.from(r.scale.resolutionG);
+  const displayUnit=getSummaryAdditionUnit();
+  byId('blendTotalAddition').textContent=fmtMassByScale(r.totalPreferred,res,displayUnit);
+  byId('blendFinalMass').textContent=fmtMassByScale(r.finalMass,res,byId('blendMeltUnit').value);
+  renderBlendElementSummary(r.rows,r.preferred,res,r.scale,displayUnit);
 }
 async function calcBlend(){
   const msg=byId('blendGlobalMessage');
@@ -257,9 +266,9 @@ async function calcBlend(){
     const preferred=batch.rows.map(r=>r.theoreticalMassG.quantize(res,mode));
     const recommendedFinal=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:preferred});
     const totalPreferred=preferred.reduce((s,x)=>s.add(x),D.zero());const finalMass=M.add(totalPreferred);
-    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res,scaleUnit(scale));
+    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res,getSummaryAdditionUnit());
     byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res,byId('blendMeltUnit').value);
-    renderBlendElementSummary(rows,preferred,res,scale);
+    renderBlendElementSummary(rows,preferred,res,scale,getSummaryAdditionUnit());
     batch.rows.forEach((r,i)=>{
       const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['四捨五入',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
       const unique=[];const seen=new Set();for(const [name,mass] of candidates){if(seen.has(mass.toString()))continue;seen.add(mass.toString());const ms=preferred.slice();ms[i]=mass;const fin=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:ms})[i];unique.push({name,mass,fin});}
@@ -497,6 +506,8 @@ async function startAdditiveEdit(id){
 
 function bindSettings(){
   const d=state.settings.decimals;byId('setDecMelt').value=d.melt;byId('setDecAddition').value=d.addition;byId('setDecPpm').value=d.ppm;byId('setDecPpb').value=d.ppb;byId('setDecWt').value=d.wt;byId('setDecYield').value=d.yield;
+  const summaryUnit=byId('blendSummaryAdditionUnit');
+  if(summaryUnit){summaryUnit.value=['auto','mg','g','kg','t'].includes(state.settings.summaryAdditionUnit)?state.settings.summaryAdditionUnit:'auto';summaryUnit.addEventListener('change',()=>{state.settings.summaryAdditionUnit=summaryUnit.value;S.saveSettings(state.settings);refreshBlendSummaryDisplay();});}
   byId('saveSettings').addEventListener('click',()=>{state.settings.decimals={melt:+byId('setDecMelt').value,addition:+byId('setDecAddition').value,ppm:+byId('setDecPpm').value,ppb:+byId('setDecPpb').value,wt:+byId('setDecWt').value,yield:+byId('setDecYield').value};S.saveSettings(state.settings);toast('設定を保存しました。')});
   byId('restartTutorial').addEventListener('click',()=>AppTutorial.open(true));
 

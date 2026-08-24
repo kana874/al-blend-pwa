@@ -6,7 +6,7 @@
   let dbPromise = null;
 
   const DEFAULT_SETTINGS = {
-    massUnit: 'kg', concUnit: 'ppm', additionUnit: 'auto', roundingMode: 'half-up',
+    massUnit: 'kg', concUnit: 'ppm', additionUnit: 'auto', summaryAdditionUnit: 'auto', roundingMode: 'half-up',
     decimals: { melt: 3, addition: 3, ppm: 3, ppb: 1, wt: 6, yield: 2 },
     lastScreen: 'blend'
   };
@@ -140,7 +140,7 @@
     const data = {};
     for (const s of STORES) data[s] = await getAll(s);
     return {
-      appVersion: root.APP_VERSION || '1.0.10', dbSchemaVersion: DB_VERSION,
+      appVersion: root.APP_VERSION || '1.1.0', dbSchemaVersion: DB_VERSION,
       exportedAt: new Date().toISOString(), settings: getSettings(), data
     };
   }
