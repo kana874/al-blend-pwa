@@ -9,12 +9,12 @@
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="css/app.css?v=1.2.0">
+  <link rel="stylesheet" href="css/app.css?v=1.3.0">
 </head>
 <body>
 <div id="appShell">
   <header class="topbar">
-    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.2.0</small></div></div>
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.3.0</small></div></div>
     <div class="top-actions"><button class="ghost" data-action="open-help">? ヘルプ</button></div>
   </header>
 
@@ -167,7 +167,7 @@
         <section class="panel">
           <h2>バックアップ</h2>
           <p class="muted">業務データと設定をJSONで保存・復元できます。</p>
-          <div class="button-row wrap"><button id="exportJson" class="primary">JSONバックアップ</button><button id="exportYieldCsv" class="secondary">歩留まりCSV</button><button id="exportHistoryCsv" class="secondary">履歴CSV</button></div>
+          <div class="button-row wrap"><button id="exportJson" class="primary">JSONバックアップ</button><button id="exportYieldCsv" class="secondary">歩留まりCSV</button><button id="exportHistoryCsv" class="secondary">履歴CSV</button><button id="importHistoryCsvBtn" class="secondary" type="button">履歴CSV復元</button><input id="importHistoryCsv" class="hidden" type="file" accept=".csv,text/csv"></div>
           <div class="import-box"><label>復元方式<select id="importMode"><option value="merge">既存データへ追加</option><option value="replace">全置換</option></select></label><label class="file-label">JSONを選択<input id="importJson" type="file" accept="application/json,.json"></label></div>
         </section>
       </div>
@@ -188,6 +188,7 @@
 
       <section class="panel">
         <div class="panel-heading"><h2>計算履歴</h2><button id="clearHistory" class="danger ghost">履歴を全削除</button></div>
+        <p class="muted master-csv-note">履歴CSV復元は、アプリから出力した履歴CSVを読み込みます。同一の日時・種類・概要・データ内容が既にある履歴は重複登録しません。</p>
         <div class="table-wrap"><table><thead><tr><th>日時</th><th>種類</th><th>概要</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div>
       </section>
     </section>
@@ -228,12 +229,12 @@ Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度�
 <div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
 <div id="toast" class="toast hidden" role="status"></div>
 
-<script>window.APP_VERSION='1.2.0';</script>
-<script src="js/vendor/decimal-lite.js?v=1.2.0"></script>
-<script src="js/calc-engine.js?v=1.2.0"></script>
-<script src="js/storage.js?v=1.2.0"></script>
-<script src="js/export.js?v=1.2.0"></script>
-<script src="js/tutorial.js?v=1.2.0"></script>
-<script src="js/app.js?v=1.2.0"></script>
+<script>window.APP_VERSION='1.3.0';</script>
+<script src="js/vendor/decimal-lite.js?v=1.3.0"></script>
+<script src="js/calc-engine.js?v=1.3.0"></script>
+<script src="js/storage.js?v=1.3.0"></script>
+<script src="js/export.js?v=1.3.0"></script>
+<script src="js/tutorial.js?v=1.3.0"></script>
+<script src="js/app.js?v=1.3.0"></script>
 </body>
 </html>

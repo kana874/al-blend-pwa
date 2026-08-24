@@ -537,6 +537,48 @@ async function restoreAdditiveMasterCsv(file){
   await S.putMany('additives',rows);resetAdditiveForm();await refreshMasters();toast(`添加材マスタを${rows.length}件復元しました。`);return true;
 }
 
+function historyRecordSignature(row){
+  return [String(row?.date||''),String(row?.type||''),String(row?.summary||''),JSON.stringify(row?.payload||{})].join('\u001f');
+}
+function parseCalculationHistoryCsv(text){
+  const parsed=X.csvObjects(text);requireCsvHeaders(parsed,['日時','種類','概要','データJSON'],'計算履歴');
+  if(!parsed.data.length)throw new Error('計算履歴CSVにデータ行がありません。');
+  return parsed.data.map(r=>{
+    const n=r.__rowNumber;
+    const rawDate=String(r['日時']??'').trim();
+    const type=String(r['種類']??'').trim();
+    const summary=String(r['概要']??'');
+    if(!rawDate)throw new Error(`${n}行目: 日時が空欄です。`);
+    const timestamp=Date.parse(rawDate);
+    if(!Number.isFinite(timestamp))throw new Error(`${n}行目: 日時「${rawDate}」を認識できません。`);
+    if(!type)throw new Error(`${n}行目: 種類が空欄です。`);
+    const rawPayload=String(r['データJSON']??'').trim();
+    let payload={};
+    if(rawPayload){
+      try{payload=JSON.parse(rawPayload);}catch(_){throw new Error(`${n}行目: データJSONが正しいJSON形式ではありません。`);}
+    }
+    if(payload===null||typeof payload!=='object'||Array.isArray(payload))throw new Error(`${n}行目: データJSONはJSONオブジェクトで指定してください。`);
+    return {id:S.uid('calc'),date:new Date(timestamp).toISOString(),type,summary,payload};
+  });
+}
+async function restoreCalculationHistoryCsv(file){
+  const rows=parseCalculationHistoryCsv(await file.text());
+  const existing=await S.getAll('calculationHistory');
+  const signatures=new Set(existing.map(historyRecordSignature));
+  const additions=[];let duplicateCount=0;
+  for(const row of rows){
+    const sig=historyRecordSignature(row);
+    if(signatures.has(sig)){duplicateCount++;continue;}
+    signatures.add(sig);additions.push(row);
+  }
+  const duplicateNote=duplicateCount?`\n重複 ${duplicateCount}件はスキップします。`:'';
+  if(!confirm(`計算履歴CSVを読み込みます。\n追加 ${additions.length}件${duplicateNote}\n続行しますか？`))return false;
+  if(additions.length)await S.putMany('calculationHistory',additions);
+  await loadHistory();
+  toast(additions.length?`計算履歴を${additions.length}件復元しました。${duplicateCount?` 重複${duplicateCount}件をスキップしました。`:''}`:`復元対象はありませんでした。重複${duplicateCount}件をスキップしました。`);
+  return true;
+}
+
 function resetScaleForm(){
   state.editingScaleId=null;byId('scaleForm').reset();byId('scaleResolutionUnit').value='g';byId('scaleSubmitBtn').textContent='追加';byId('cancelScaleEdit').classList.add('hidden');
 }
@@ -583,6 +625,8 @@ function bindSettings(){
   byId('importScaleCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreScaleMasterCsv(f);}catch(err){toast('天秤マスタCSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
   byId('importAdditiveCsvBtn').addEventListener('click',()=>byId('importAdditiveCsv').click());
   byId('importAdditiveCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreAdditiveMasterCsv(f);}catch(err){toast('添加材マスタCSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
+  byId('importHistoryCsvBtn').addEventListener('click',()=>byId('importHistoryCsv').click());
+  byId('importHistoryCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreCalculationHistoryCsv(f);}catch(err){toast('計算履歴CSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
 
   byId('exportJson').addEventListener('click',async()=>X.exportJson(await S.exportAll()));
   byId('exportYieldCsv').addEventListener('click',async()=>{const r=await S.getAll('yieldRecords');X.exportCsv(['日付','元素','添加材','溶湯量_g','添加前_質量分率','添加後_質量分率','添加量_g','歩留まり_%','採用','メモ'],r.map(x=>[x.date,x.element,x.additiveName,x.meltMassG,x.beforeFraction,x.afterFraction,x.additionMassG,D.from(x.yieldFraction).mul(100).toString(),x.adopted!==false?'採用':'除外',x.memo||'']),`Al配合計算_歩留まり実績_${X.dateStamp()}.csv`)});

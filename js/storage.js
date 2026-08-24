@@ -145,7 +145,7 @@
     const data = {};
     for (const s of STORES) data[s] = await getAll(s);
     return {
-      appVersion: root.APP_VERSION || '1.2.0', dbSchemaVersion: DB_VERSION,
+      appVersion: root.APP_VERSION || '1.3.0', dbSchemaVersion: DB_VERSION,
       exportedAt: new Date().toISOString(), settings: getSettings(), data
     };
   }

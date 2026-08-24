@@ -69,7 +69,7 @@ const app=fs.readFileSync(path.join(__dirname,'..','js','app.js'),'utf8');
 const css=fs.readFileSync(path.join(__dirname,'..','css','app.css'),'utf8');
 const storage=fs.readFileSync(path.join(__dirname,'..','js','storage.js'),'utf8');
 function has(text,needle,msg){assert.ok(text.includes(needle),msg||`missing: ${needle}`);passed++;}
-has(html,'Ver.1.2.0','version label');
+has(html,'Ver.1.3.0','version label');
 has(css,'.brand small{display:block;opacity:.82;font-size:10px','mobile version remains visible');
 has(html,'id="blendPresetSelect"','preset selector');
 has(html,'id="exportScaleCsv"','scale CSV export');
@@ -92,8 +92,8 @@ has(app,"availableElements().includes(element)",'master-only element validation'
 has(app,'元素は添加材マスタの主元素からドロップダウンで選択してください。','dropdown validation message');
 assert.ok((app.match(/persistCalculationHistory\(/g)||[]).length>=5,'all calculation paths must use common history persistence');passed++;
 has(app,'`${String(r?.element||`元素${i+1}`)} 添加量`','element summary labels include 添加量');
-has(html,'js/app.js?v=1.2.0','app.js cache busting');
-has(html,'css/app.css?v=1.2.0','css cache busting');
+has(html,'js/app.js?v=1.3.0','app.js cache busting');
+has(html,'css/app.css?v=1.3.0','css cache busting');
 has(html,'id="blendSummaryAdditionUnit"','summary addition unit selector');
 has(html,'<option value="auto">自動</option>','summary automatic unit option');
 has(html,'<option value="mg">mg</option>','summary mg unit option');
@@ -126,6 +126,17 @@ assert.strictEqual(parsed.data[0]['名称'],'天秤,A');passed++;
 assert.strictEqual(parsed.data[0]['備考'],'改行\nあり');passed++;
 assert.strictEqual(parsed.data[1]['名称'],'引用符"テスト');passed++;
 assert.throws(()=>X.parseCsv('ID,名称\n1,"未完'),/引用符が閉じられていません/);passed++;
+
+// Ver.1.3.0 calculation history CSV restore checks
+has(html,'id="importHistoryCsvBtn"','history CSV restore button');
+has(html,'id="importHistoryCsv"','history CSV file input');
+has(app,'function parseCalculationHistoryCsv(text)','history CSV validator');
+has(app,'function restoreCalculationHistoryCsv(file)','history CSV restore function');
+has(app,"requireCsvHeaders(parsed,['日時','種類','概要','データJSON'],'計算履歴')",'history CSV required headers');
+has(app,"await S.putMany('calculationHistory',additions)",'history CSV bulk restore');
+has(app,'function historyRecordSignature(row)','history duplicate signature');
+has(html,'重複登録しません','history duplicate notice');
+has(app,"byId('importHistoryCsvBtn').addEventListener",'history CSV restore event binding');
 
 console.log(`PASS: ${passed} assertions`);
 console.log(`Sample theoretical Cu addition = ${x.toFixed(9)} g`);
