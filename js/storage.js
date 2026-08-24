@@ -92,10 +92,10 @@
       { id:'add-al5ti', name:'Al-5Ti', type:'master', mainElement:'Ti', components:[{element:'Ti', wtPercent:'5.000'}], purity:'', maker:'', partNo:'', note:'Al balance', active:true }
     ];
     const scales = [
-      { id:'scale-001', name:'0.001 g 天秤', resolutionG:'0.001', active:true },
-      { id:'scale-01', name:'0.01 g 天秤', resolutionG:'0.01', active:true },
-      { id:'scale-1', name:'0.1 g 天秤', resolutionG:'0.1', active:true },
-      { id:'scale-100', name:'1 g 天秤', resolutionG:'1', active:true }
+      { id:'scale-001', name:'0.001 g 天秤', resolutionValue:'0.001', resolutionUnit:'g', resolutionG:'0.001', active:true },
+      { id:'scale-01', name:'0.01 g 天秤', resolutionValue:'0.01', resolutionUnit:'g', resolutionG:'0.01', active:true },
+      { id:'scale-1', name:'0.1 g 天秤', resolutionValue:'0.1', resolutionUnit:'g', resolutionG:'0.1', active:true },
+      { id:'scale-100', name:'1 g 天秤', resolutionValue:'1', resolutionUnit:'g', resolutionG:'1', active:true }
     ];
     for (const a of additives) await put('additives', a);
     for (const s of scales) await put('scales', s);
@@ -104,17 +104,34 @@
   }
 
   async function migrateAppData() {
-    const key = 'migration-1.0.2-restore-pure-presets-without-5n-label';
+    const presetKey = 'migration-1.0.2-restore-pure-presets-without-5n-label';
+    if (!(await get('appMetadata', presetKey))) {
+      const presets = [
+        { id:'add-5n-cu', name:'Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+        { id:'add-5n-si', name:'Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+        { id:'add-5n-ti', name:'Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true }
+      ];
+      for (const preset of presets) {
+        const current = await get('additives', preset.id);
+        if (current) await put('additives', { ...current, name:preset.name });
+        else await put('additives', preset);
+      }
+      await put('appMetadata', { key:presetKey, value:true, at:new Date().toISOString() });
+    }
+
+    const key = 'migration-1.0.4-scale-unit-and-additive-note';
     if (await get('appMetadata', key)) return;
-    const presets = [
-      { id:'add-5n-cu', name:'Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
-      { id:'add-5n-si', name:'Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
-      { id:'add-5n-ti', name:'Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true }
-    ];
-    for (const preset of presets) {
-      const current = await get('additives', preset.id);
-      if (current) await put('additives', { ...current, name:preset.name });
-      else await put('additives', preset);
+    for (const scale of await getAll('scales')) {
+      const resolutionUnit = scale.resolutionUnit === 'kg' ? 'kg' : 'g';
+      const resolutionValue = scale.resolutionValue || (resolutionUnit === 'kg'
+        ? String(Number(scale.resolutionG || 0) / 1000)
+        : String(scale.resolutionG || ''));
+      await put('scales', { ...scale, resolutionUnit, resolutionValue });
+    }
+    for (const additive of await getAll('additives')) {
+      if ((!additive.note || additive.note === '') && additive.maker) {
+        await put('additives', { ...additive, note:additive.maker, maker:'' });
+      }
     }
     await put('appMetadata', { key, value:true, at:new Date().toISOString() });
   }
@@ -123,7 +140,7 @@
     const data = {};
     for (const s of STORES) data[s] = await getAll(s);
     return {
-      appVersion: root.APP_VERSION || '1.0.3', dbSchemaVersion: DB_VERSION,
+      appVersion: root.APP_VERSION || '1.0.10', dbSchemaVersion: DB_VERSION,
       exportedAt: new Date().toISOString(), settings: getSettings(), data
     };
   }
