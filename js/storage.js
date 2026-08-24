@@ -125,27 +125,97 @@
     }
 
     const key = 'migration-1.0.4-scale-unit-and-additive-note';
-    if (await get('appMetadata', key)) return;
-    for (const scale of await getAll('scales')) {
-      const resolutionUnit = scale.resolutionUnit === 'kg' ? 'kg' : 'g';
-      const resolutionValue = scale.resolutionValue || (resolutionUnit === 'kg'
-        ? String(Number(scale.resolutionG || 0) / 1000)
-        : String(scale.resolutionG || ''));
-      await put('scales', { ...scale, resolutionUnit, resolutionValue });
-    }
-    for (const additive of await getAll('additives')) {
-      if ((!additive.note || additive.note === '') && additive.maker) {
-        await put('additives', { ...additive, note:additive.maker, maker:'' });
+    if (!(await get('appMetadata', key))) {
+      for (const scale of await getAll('scales')) {
+        const resolutionUnit = scale.resolutionUnit === 'kg' ? 'kg' : 'g';
+        const resolutionValue = scale.resolutionValue || (resolutionUnit === 'kg'
+          ? String(Number(scale.resolutionG || 0) / 1000)
+          : String(scale.resolutionG || ''));
+        await put('scales', { ...scale, resolutionUnit, resolutionValue });
       }
+      for (const additive of await getAll('additives')) {
+        if ((!additive.note || additive.note === '') && additive.maker) {
+          await put('additives', { ...additive, note:additive.maker, maker:'' });
+        }
+      }
+      await put('appMetadata', { key, value:true, at:new Date().toISOString() });
     }
-    await put('appMetadata', { key, value:true, at:new Date().toISOString() });
+
+    // Ver.1.4.0: standard blend presets supplied by the user.
+    // Existing same-name presets are preserved and are never overwritten.
+    const preset140Key = 'migration-1.4.0-standard-blend-presets';
+    if (!(await get('appMetadata', preset140Key))) {
+      const additives = await getAll('additives');
+      const scales = await getAll('scales');
+      const recipes = await getAll('productRecipes');
+      const existingNames = new Set(recipes.filter(r => r && r.kind === 'blendPreset').map(r => String(r.name || '').trim().toLowerCase()));
+      const additiveFor = (element, preferredId) => additives.find(a => a.id === preferredId && a.active !== false) || additives.find(a => a.active !== false && String(a.mainElement || '').toLowerCase() === element.toLowerCase());
+      const pctFor = (additive, element) => {
+        if (!additive) return '';
+        const c = (additive.components || []).find(x => String(x.element || '').toLowerCase() === element.toLowerCase()) || (additive.components || [])[0];
+        return c ? String(c.wtPercent ?? '') : '';
+      };
+      const cu = additiveFor('Cu', 'add-5n-cu');
+      const si = additiveFor('Si', 'add-5n-si');
+      const oneGramScale = scales.find(s => s.active !== false && Number(s.resolutionG) === 1) || null;
+      const defs = [
+        ['025C',    [['Cu','0.25','wt%']]],
+        ['03C',     [['Cu','0.30','wt%']]],
+        ['05C',     [['Cu','0.50','wt%']]],
+        ['1C',      [['Cu','1','wt%']]],
+        ['2C',      [['Cu','2','wt%']]],
+        ['4C',      [['Cu','4','wt%']]],
+        ['8C',      [['Cu','8','wt%']]],
+        ['02S05C',  [['Cu','0.50','wt%'],['Si','0.20','wt%']]],
+        ['075S05C', [['Cu','0.50','wt%'],['Si','0.75','wt%']]],
+        ['08S03C',  [['Cu','0.30','wt%'],['Si','0.80','wt%']]],
+        ['08S05C',  [['Cu','0.50','wt%'],['Si','0.80','wt%']]],
+        ['1S004C',  [['Cu','0.04','wt%'],['Si','1','wt%']]],
+        ['1S05C',   [['Cu','0.50','wt%'],['Si','1','wt%']]],
+        ['03S',     [['Si','0.30','wt%']]],
+        ['05S',     [['Si','0.50','wt%']]],
+        ['08S',     [['Si','0.80','wt%']]],
+        ['1S',      [['Si','1','wt%']]],
+        ['1.2S',    [['Si','1.20','wt%']]],
+        ['30ppmS',  [['Si','30','ppm']]]
+      ];
+      for (const [name, targets] of defs) {
+        if (existingNames.has(name.toLowerCase())) continue;
+        const rows = targets.map(([element,target,targetUnit]) => {
+          const a = element === 'Cu' ? cu : si;
+          return {
+            element,
+            current:'',
+            currentUnit:'ppm',
+            target,
+            targetUnit,
+            additiveId:a ? a.id : '',
+            additivePct:pctFor(a, element),
+            yield:'100',
+            yieldSource:'manual'
+          };
+        });
+        await put('productRecipes', {
+          id:`default-preset-${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}`,
+          kind:'blendPreset',
+          name,
+          data:{meltUnit:'kg', scaleId:oneGramScale ? oneGramScale.id : '', roundingMode:'half-up', rows},
+          systemDefault:true,
+          defaultRevision:1,
+          createdAt:new Date().toISOString(),
+          updatedAt:new Date().toISOString()
+        });
+        existingNames.add(name.toLowerCase());
+      }
+      await put('appMetadata', { key:preset140Key, value:true, at:new Date().toISOString() });
+    }
   }
 
   async function exportAll() {
     const data = {};
     for (const s of STORES) data[s] = await getAll(s);
     return {
-      appVersion: root.APP_VERSION || '1.3.0', dbSchemaVersion: DB_VERSION,
+      appVersion: root.APP_VERSION || '1.4.0', dbSchemaVersion: DB_VERSION,
       exportedAt: new Date().toISOString(), settings: getSettings(), data
     };
   }
