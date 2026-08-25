@@ -26,6 +26,27 @@ function normalizeTextNodes(root){
   }
 }
 
+function setVersionBadge(){
+  window.APP_VERSION='1.5.0';
+  document.querySelectorAll('.brand small').forEach(el=>el.textContent='Ver.1.5.0');
+}
+
+function injectPatchCss(){
+  if(document.querySelector('link[data-v15-patch]'))return;
+  const link=document.createElement('link');
+  link.rel='stylesheet';link.href='css/ui-v1.5.css?v=1.5.0';link.dataset.v15Patch='';
+  document.head.appendChild(link);
+}
+
+function enhanceStaticHelp(){
+  const round=document.getElementById('h-round');
+  if(!round)return;
+  const p=round.nextElementSibling;
+  if(p&&p.tagName==='P'&&!p.textContent.includes('使用する秤量器の桁数に合わせてください')){
+    p.append(document.createTextNode(' 表示桁数は、使用する秤量器の桁数に合わせてください。'));
+  }
+}
+
 function enhanceScaleHelpModal(){
   const body=document.getElementById('helpModalBody');
   if(!body)return;
@@ -41,6 +62,20 @@ function enhanceScaleHelpModal(){
 function historyGroupFor(type){
   for(const [key,def] of Object.entries(HISTORY_GROUPS))if(def.match(type))return key;
   return 'other';
+}
+
+function injectHistoryTabs(){
+  const tbody=document.getElementById('historyRows');
+  if(!tbody||document.getElementById('historyTypeTabs'))return;
+  const wrap=tbody.closest('.table-wrap');
+  if(!wrap)return;
+  const tabs=document.createElement('div');
+  tabs.id='historyTypeTabs';tabs.className='history-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','履歴の種類');
+  const defs=[['all','すべて'],['blend','配合計算'],['verify','添加確認'],['yield','歩留まり'],['dilution','希釈計算']];
+  tabs.innerHTML=defs.map(([key,label],i)=>`<button type="button" class="history-tab${i===0?' active':''}" role="tab" aria-selected="${i===0?'true':'false'}" data-history-filter="${key}">${label}<span class="history-count" data-history-count="${key}">0</span></button>`).join('');
+  const empty=document.createElement('p');empty.id='historyFilterEmpty';empty.className='muted hidden';
+  wrap.parentElement.insertBefore(tabs,wrap);
+  wrap.parentElement.insertBefore(empty,wrap);
 }
 
 function applyHistoryFilter(){
@@ -80,6 +115,7 @@ function applyHistoryFilter(){
 }
 
 function bindHistoryTabs(){
+  injectHistoryTabs();
   document.querySelectorAll('[data-history-filter]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       historyFilter=btn.dataset.historyFilter||'all';
@@ -135,6 +171,7 @@ function patchCsvCompatibility(){
 
 function watchDynamicTerminology(){
   normalizeTextNodes(document.body);
+  enhanceStaticHelp();
   enhanceScaleHelpModal();
   const target=document.getElementById('appShell')||document.body;
   const toast=document.getElementById('toast');
@@ -150,6 +187,7 @@ function watchDynamicTerminology(){
         }
       }
     }
+    enhanceStaticHelp();
     enhanceScaleHelpModal();
   });
   observer.observe(target,{childList:true,subtree:true,characterData:true});
@@ -158,6 +196,8 @@ function watchDynamicTerminology(){
 }
 
 function init(){
+  injectPatchCss();
+  setVersionBadge();
   patchDialogs();
   patchCsvCompatibility();
   bindHistoryTabs();
