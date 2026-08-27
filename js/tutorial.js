@@ -34,3 +34,54 @@
   }
   root.AppTutorial={VERSION,init,open,close};
 })(typeof self!=='undefined'?self:window);
+
+(function(){
+  'use strict';
+  let deferredInstallPrompt=null;
+
+  function isStandalone(){
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
+  }
+
+  function ensureInstallButton(){
+    let button=document.getElementById('btnInstallApp');
+    if(button)return button;
+    const host=document.querySelector('.top-actions');
+    if(!host)return null;
+
+    button=document.createElement('button');
+    button.id='btnInstallApp';
+    button.type='button';
+    button.className='ghost';
+    button.textContent='アプリとしてインストール';
+    button.hidden=true;
+    button.addEventListener('click',async()=>{
+      if(!deferredInstallPrompt)return;
+      deferredInstallPrompt.prompt();
+      try{
+        await deferredInstallPrompt.userChoice;
+      }finally{
+        deferredInstallPrompt=null;
+        button.hidden=true;
+      }
+    });
+    host.insertBefore(button,host.firstChild);
+    return button;
+  }
+
+  ensureInstallButton();
+
+  window.addEventListener('beforeinstallprompt',event=>{
+    if(isStandalone())return;
+    event.preventDefault();
+    deferredInstallPrompt=event;
+    const button=ensureInstallButton();
+    if(button)button.hidden=false;
+  });
+
+  window.addEventListener('appinstalled',()=>{
+    deferredInstallPrompt=null;
+    const button=document.getElementById('btnInstallApp');
+    if(button)button.hidden=true;
+  });
+})();
