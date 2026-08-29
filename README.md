@@ -74,6 +74,10 @@ npm test
 
 ブラウザデータの消去に備え、「設定・データ」からJSONバックアップを定期的に保存してください。
 
+## AI向けプロジェクトknowledge
+
+ChatGPT、Codex、Gemini Web、Antigravity 2は、作業前に [`.ai/INDEX.md`](.ai/INDEX.md) を入口として、計算仕様、現在状態、既知事項を確認してください。
+
 
 ## Ver.1.0.4 追加仕様
 - 天秤マスタの分解能単位は g / kg から選択できます。
