@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "project": "al-blend-pwa",
+  "knowledge_id": "knw_20260829_ab01a1b2",
+  "title": "Al Blend PWA共有knowledge導入引き継ぎ",
+  "status": "candidate",
+  "provenance": {
+    "actor_id": "ai:codex"
+  },
+  "canonical_source": ".ai/inbox/knw_20260829_ab01a1b2-shared-knowledge-rollout.md",
+  "index_source": ".ai/INDEX.md",
+  "compatibility_purpose": "public non-hidden read path for web AI clients",
+  "generated_from_commit_policy": "validated by npm test before merge"
+}

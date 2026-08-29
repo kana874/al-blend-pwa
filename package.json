@@ -2,5 +2,5 @@
   "name":"al-blend-pwa-v1",
   "version":"1.4.0",
   "private":true,
-  "scripts":{"test":"node tests/run-tests.js"}
+  "scripts":{"test":"node tests/run-tests.js && node scripts/check-ai-knowledge-mirror.js"}
 }

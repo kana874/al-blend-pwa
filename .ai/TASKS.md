@@ -4,7 +4,7 @@
 
 - [ ] ChatGPTで `.ai/INDEX.md` から候補knowledgeを読み、タイトル・状態・actor_idを確認する。
 - [ ] Codexで同じ3項目を確認する。
-- [ ] Gemini Webで同じ3項目を確認する。
+- [ ] Gemini WebでGitHub Pages互換経路から同じ3項目を確認する。
 - [ ] Antigravity 2で同じ3項目を確認する。
 - [ ] Publicリポジトリにprivate情報が含まれないことを人間が確認する。
 

@@ -78,6 +78,8 @@ npm test
 
 ChatGPT、Codex、Gemini Web、Antigravity 2は、作業前に [`.ai/INDEX.md`](.ai/INDEX.md) を入口として、計算仕様、現在状態、既知事項を確認してください。
 
+GitHubの隠しディレクトリを取得できないWeb AIは、[公開互換読取ページ](ai-knowledge/index.html) または [機械可読JSON](ai-knowledge/phase3.json) を使用できます。公開データは `npm test` で `.ai/` の正本との一致を検査します。
+
 
 ## Ver.1.0.4 追加仕様
 - 天秤マスタの分解能単位は g / kg から選択できます。

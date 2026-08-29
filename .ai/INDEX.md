@@ -22,6 +22,13 @@
 - [Phase 3導入候補](inbox/knw_20260829_ab01a1b2-shared-knowledge-rollout.md) — `candidate`
 - [引き継ぎの書き方](handoffs/README.md)
 
+## Web AI互換読取
+
+- [非隠しHTML入口](../ai-knowledge/index.html)
+- [機械可読JSON](../ai-knowledge/phase3.json)
+
+`.ai/` を取得できないWeb AIでは上記を使用します。HTMLとJSONは `npm test` で正本との一致を検査します。
+
 ## 読み方
 
 1. 計算内容の質問では `CALC_SPEC.md` を優先する。
