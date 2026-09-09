@@ -8,6 +8,7 @@
   const MASS_TO_G = { mg: '0.001', g: '1', kg: '1000', t: '1000000' };
   const CONC_DIV = { 'wt%': '100', ppm: '1000000', ppb: '1000000000' };
   const DP = 48;
+  const PI = D.from('3.1415926535897932384626433832795028841971693993751');
 
   function dec(v, name = 'value') {
     try { return D.from(v); }
@@ -16,6 +17,12 @@
 
   function assertPositive(v, name) { if (v.lte(0)) throw new Error(name + ' must be > 0'); }
   function assertNonNegative(v, name) { if (v.lt(0)) throw new Error(name + ' must be >= 0'); }
+  function positiveInteger(v, name) {
+    const x = dec(v, name); assertPositive(x, name);
+    const n = Number(x.toString());
+    if (!Number.isSafeInteger(n)) throw new Error(name + ' must be a positive integer');
+    return x;
+  }
 
   function massToGram(value, unit) {
     if (!MASS_TO_G[unit]) throw new Error('Unsupported mass unit: ' + unit);
@@ -165,11 +172,53 @@
     });
   }
 
+  function calculateBilletUnitWeight({ diameterMm, densityGPerCm3 }) {
+    const diameter = dec(diameterMm, 'billet diameter'); assertPositive(diameter, 'billet diameter');
+    const density = dec(densityGPerCm3, 'density'); assertPositive(density, 'density');
+    const areaMm2 = PI.mul(diameter.mul(diameter)).div(4, DP);
+    // 1 m = 1000 mm and 1 cm3 = 1000 mm3, so the numeric value of
+    // area[mm2] equals volume[cm3] for a 1 m long cylinder.
+    const volumeCm3PerM = areaMm2;
+    const unitWeightKgPerM = volumeCm3PerM.mul(density).div(1000, DP);
+    return { diameterMm: diameter, densityGPerCm3: density, areaMm2, volumeCm3PerM, unitWeightKgPerM };
+  }
+
+  function calculateBilletFlow({ unitWeightKgPerM, castingSpeedMmPerMin }) {
+    const unitWeight = dec(unitWeightKgPerM, 'billet unit weight'); assertPositive(unitWeight, 'billet unit weight');
+    const speedMmPerMin = dec(castingSpeedMmPerMin, 'casting speed'); assertPositive(speedMmPerMin, 'casting speed');
+    const speedMPerMin = speedMmPerMin.div(1000, DP);
+    const flowKgPerMin = unitWeight.mul(speedMPerMin);
+    return { unitWeightKgPerM: unitWeight, castingSpeedMmPerMin: speedMmPerMin, speedMPerMin, flowKgPerMin };
+  }
+
+  function calculateTotalCastingFlow({ flowKgPerMin, billetCount }) {
+    const flow = dec(flowKgPerMin, 'flow'); assertNonNegative(flow, 'flow');
+    const count = positiveInteger(billetCount, 'billet count');
+    return { flowKgPerMin: flow, billetCount: count, totalFlowKgPerMin: flow.mul(count) };
+  }
+
+  function calculateBilletWeight({ unitWeightKgPerM, billetLengthMm, billetCount = 1 }) {
+    const unitWeight = dec(unitWeightKgPerM, 'billet unit weight'); assertPositive(unitWeight, 'billet unit weight');
+    const lengthMm = dec(billetLengthMm, 'billet length'); assertPositive(lengthMm, 'billet length');
+    const count = positiveInteger(billetCount, 'billet count');
+    const lengthM = lengthMm.div(1000, DP);
+    const oneBilletWeightKg = unitWeight.mul(lengthM);
+    return {
+      unitWeightKgPerM: unitWeight,
+      billetLengthMm: lengthMm,
+      billetLengthM: lengthM,
+      billetCount: count,
+      oneBilletWeightKg,
+      totalBilletWeightKg: oneBilletWeightKg.mul(count)
+    };
+  }
+
   return {
     VERSION: '1.4.0', Decimal: D, massToGram, gramToMass, gramToDisplayMass,
     concentrationToFraction, fractionToConcentration, percentToFraction,
     calculateAdditionMass, calculateFinalConcentration, calculateYield,
     calculateDilutionMass, calculateRoundedScenarios, calculateMultiElementBatch,
-    finalConcentrationsForBatch
+    finalConcentrationsForBatch, calculateBilletUnitWeight, calculateBilletFlow,
+    calculateTotalCastingFlow, calculateBilletWeight
   };
 });
