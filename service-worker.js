@@ -1,6 +1,6 @@
-const CACHE='al-blend-pwa-v1.5.2';
+const CACHE='al-blend-pwa-v1.5.3';
 const ASSETS=[
-  './','./index.html','./css/app.css?v=1.4.0','./css/ui-v1.5.css?v=1.5.0','./js/vendor/decimal-lite.js?v=1.4.0','./js/calc-engine.js?v=1.4.0','./js/storage.js?v=1.4.0','./js/export.js?v=1.4.0','./js/tutorial.js?v=1.4.0','./js/app.js?v=1.4.0','./js/ui-v1.5.js?v=1.5.0','./manifest.json','./icons/icon-192.png','./icons/icon-512.png'
+  './','./index.html','./css/app.css?v=1.4.0','./css/ui-v1.5.css?v=1.5.0','./css/billet-flow.css?v=20260909','./js/vendor/decimal-lite.js?v=1.4.0','./js/calc-engine.js?v=1.4.0','./js/storage.js?v=1.4.0','./js/export.js?v=1.4.0','./js/tutorial.js?v=1.4.0','./js/app.js?v=1.4.0','./js/ui-v1.5.js?v=1.5.0','./js/billet-flow.js?v=20260909','./manifest.json','./icons/icon-192.png','./icons/icon-512.png'
 ];
 
 async function withUiPatch(response){

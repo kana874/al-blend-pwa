@@ -7,7 +7,8 @@ const HISTORY_GROUPS={
   blend:{label:'配合計算',match:type=>String(type||'')==='配合計算'},
   verify:{label:'添加確認',match:type=>String(type||'')==='添加確認'},
   yield:{label:'歩留まり',match:type=>String(type||'').includes('歩留まり')},
-  dilution:{label:'希釈計算',match:type=>String(type||'')==='希釈計算'}
+  dilution:{label:'希釈計算',match:type=>String(type||'')==='希釈計算'},
+  casting:{label:'ビレット・流量',match:type=>String(type||'')==='ビレット・流量'}
 };
 let historyFilter='all';
 
@@ -71,19 +72,61 @@ function injectHistoryTabs(){
   if(!wrap)return;
   const tabs=document.createElement('div');
   tabs.id='historyTypeTabs';tabs.className='history-tabs';tabs.setAttribute('role','tablist');tabs.setAttribute('aria-label','履歴の種類');
-  const defs=[['all','すべて'],['blend','配合計算'],['verify','添加確認'],['yield','歩留まり'],['dilution','希釈計算']];
+  const defs=[['all','すべて'],['blend','配合計算'],['verify','添加確認'],['yield','歩留まり'],['dilution','希釈計算'],['casting','ビレット・流量']];
   tabs.innerHTML=defs.map(([key,label],i)=>`<button type="button" class="history-tab${i===0?' active':''}" role="tab" aria-selected="${i===0?'true':'false'}" data-history-filter="${key}">${label}<span class="history-count" data-history-count="${key}">0</span></button>`).join('');
   const empty=document.createElement('p');empty.id='historyFilterEmpty';empty.className='muted hidden';
   wrap.parentElement.insertBefore(tabs,wrap);
   wrap.parentElement.insertBefore(empty,wrap);
 }
 
+async function showCastingHistoryDetail(id){
+  if(!S||typeof S.get!=='function')return;
+  const record=await S.get('calculationHistory',id);
+  if(!record||historyGroupFor(record.type)!=='casting')return;
+  const modal=document.getElementById('helpModal');
+  const backdrop=document.getElementById('modalBackdrop');
+  const title=document.getElementById('helpModalTitle');
+  const body=document.getElementById('helpModalBody');
+  if(!modal||!backdrop||!title||!body)return;
+  title.textContent='ビレット・流量 計算過程';
+  body.innerHTML='';
+  const summary=document.createElement('p');
+  summary.className='muted';
+  summary.textContent=record.summary||'';
+  const pre=document.createElement('pre');
+  pre.className='billet-process';
+  pre.textContent=String(record.payload?.processText||'この履歴には計算過程が保存されていません。');
+  body.append(summary,pre);
+  backdrop.classList.remove('hidden');
+  modal.classList.remove('hidden');
+}
+
+function decorateCastingHistoryRows(){
+  const tbody=document.getElementById('historyRows');
+  if(!tbody)return;
+  Array.from(tbody.querySelectorAll('tr')).forEach(row=>{
+    if(!row.cells||row.cells.length<4)return;
+    const type=row.cells[1]?.textContent?.trim()||'';
+    if(historyGroupFor(type)!=='casting'||row.querySelector('.casting-history-detail'))return;
+    const deleteButton=row.querySelector('.delete-history');
+    const id=deleteButton?.dataset.id;
+    if(!id)return;
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='ghost casting-history-detail';
+    button.textContent='計算過程';
+    button.addEventListener('click',()=>showCastingHistoryDetail(id));
+    row.cells[3].insertBefore(button,deleteButton||null);
+  });
+}
+
 function applyHistoryFilter(){
   const tbody=document.getElementById('historyRows');
   if(!tbody)return;
+  decorateCastingHistoryRows();
   const rows=Array.from(tbody.querySelectorAll('tr'));
   const dataRows=rows.filter(row=>row.cells&&row.cells.length>=4&&!row.querySelector('td[colspan]'));
-  const counts={all:dataRows.length,blend:0,verify:0,yield:0,dilution:0};
+  const counts={all:dataRows.length,blend:0,verify:0,yield:0,dilution:0,casting:0};
   let visible=0;
 
   for(const row of dataRows){
