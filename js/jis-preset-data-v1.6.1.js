@@ -10,4 +10,4 @@ row.targets=[
   {element:'Si',min:'0.40',max:'0.8'},
   {element:'Fe',min:'0.50',max:'1.0'}
 ];
-})(typeof self!=='undefined'?self:this);
+})(typeof globalThis!=='undefined'?globalThis:(typeof self!=='undefined'?self:this));
