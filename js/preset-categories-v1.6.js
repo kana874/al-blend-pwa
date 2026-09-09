@@ -10,6 +10,7 @@
 'use strict';
 
 const MIGRATION_KEY='migration-1.6.0-preset-categories-jis';
+const SELECTION_KEY='alBlendPresetSelectionV16';
 const CATEGORY_ORDER=['5n','jis','user'];
 const CATEGORY_LABELS={5n:'5N',jis:'JIS合金',user:'ユーザー'};
 const GROUP_ORDER={
@@ -230,9 +231,12 @@ async function initUi(root){
   }
 
   let observer=null;let rendering=false;
-  const settings=()=>S.getSettings();
+  const readSelection=()=>{
+    try{return JSON.parse(root.localStorage.getItem(SELECTION_KEY)||'{}')||{}}
+    catch(_){return{}}
+  };
   const saveSelection=(category,presetId)=>{
-    const s=settings();s.blendPresetCategory=category;s.blendPresetId=presetId||'';S.saveSettings(s);
+    root.localStorage.setItem(SELECTION_KEY,JSON.stringify({category,presetId:presetId||''}));
   };
 
   async function render(preferredId=''){
@@ -242,11 +246,11 @@ async function initUi(root){
       const rows=(await S.getAll('productRecipes')).filter(r=>r&&r.kind==='blendPreset');
       const hasUser=rows.some(r=>categoryForRecipe(r)==='user');
       const categories=CATEGORY_ORDER.filter(c=>c!=='user'||hasUser);
-      const s=settings();
+      const rememberedSelection=readSelection();
       const domId=preferredId||presetSelect.value||'';
       const domRecipe=rows.find(r=>r.id===domId);
-      const remembered=rows.find(r=>r.id===s.blendPresetId);
-      let category=domRecipe?categoryForRecipe(domRecipe):(categorySelect.value||s.blendPresetCategory||'5n');
+      const remembered=rows.find(r=>r.id===rememberedSelection.presetId);
+      let category=domRecipe?categoryForRecipe(domRecipe):(categorySelect.value||rememberedSelection.category||'5n');
       if(!categories.includes(category))category='5n';
 
       categorySelect.innerHTML=categories.map(c=>`<option value="${c}">${CATEGORY_LABELS[c]}</option>`).join('');
@@ -295,7 +299,7 @@ async function initUi(root){
 }
 
 return{
-  MIGRATION_KEY,CATEGORY_ORDER,CATEGORY_LABELS,GROUP_ORDER,GROUP_LABELS,FIVE_N_GROUPS,ADDITIVE_DEFAULTS,JIS_PRESETS,
+  MIGRATION_KEY,SELECTION_KEY,CATEGORY_ORDER,CATEGORY_LABELS,GROUP_ORDER,GROUP_LABELS,FIVE_N_GROUPS,ADDITIVE_DEFAULTS,JIS_PRESETS,
   midpoint,categoryForRecipe,groupForRecipe,migratePresetCatalog,installStorageMigration,scheduleUi
 };
 });
