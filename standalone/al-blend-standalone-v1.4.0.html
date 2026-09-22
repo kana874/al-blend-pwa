@@ -1,0 +1,1986 @@
+<!doctype html>
+<!-- Al配合計算 完全単一HTML版 v1.4.0 / GitHub main参照 / CSS・JS内蔵 / 実行時外部通信不要 -->
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f3d56">
+  <meta name="description" content="高純度Alターゲット鋳塊向けの配合・添加確認・歩留まり逆算・希釈計算PWA">
+  <title>Al 配合計算</title>
+  <style data-standalone="app-css">:root{
+  --bg:#f4f7f9;--panel:#fff;--text:#14232c;--muted:#61727d;--line:#d8e1e6;
+  --brand:#0f3d56;--brand2:#1b607f;--accent:#0c758a;--danger:#a52a2a;--warn:#8a5b00;
+  --shadow:0 8px 24px rgba(26,48,61,.08);--radius:14px;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth} body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Yu Gothic UI",sans-serif;line-height:1.55}
+button,input,select,textarea{font:inherit} button{cursor:pointer} input,select,textarea{width:100%;border:1px solid #bac8d1;border-radius:9px;background:#fff;color:var(--text);padding:10px 11px;min-height:44px} textarea{resize:vertical}.hidden{display:none!important}.muted{color:var(--muted)}
+.topbar{position:fixed;z-index:20;top:0;left:0;right:0;height:64px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 22px;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.brand{display:flex;align-items:center;gap:10px}.brand-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:#fff;color:var(--brand);font-weight:800}.brand strong{display:block;font-size:17px}.brand small{display:block;opacity:.78;font-size:11px}.top-actions{display:flex;gap:10px;align-items:center}
+.sidebar{position:fixed;z-index:15;top:64px;left:0;bottom:0;width:190px;background:#eaf0f3;border-right:1px solid var(--line);padding:18px 10px;display:flex;flex-direction:column;gap:5px}.nav-btn{border:0;background:transparent;text-align:left;padding:12px 14px;border-radius:9px;color:#27404d;font-weight:600}.nav-btn:hover{background:#dae6eb}.nav-btn.active{background:var(--brand);color:#fff}
+.main-content{margin-left:190px;padding:88px 28px 42px;max-width:1600px}.screen{display:none}.screen.active{display:block}.page-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:18px}.page-heading h1{margin:0 0 4px;font-size:28px}.page-heading p{margin:0;color:var(--muted)}
+.grid{display:grid;gap:16px}.two-col{grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr)}.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}.panel h2{font-size:18px;margin:0 0 14px}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.panel-heading h2{margin:0}.field-row,.field-grid{display:grid;gap:12px}.field-row{grid-template-columns:repeat(3,minmax(0,1fr))}.field-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.field-grid.compact{grid-template-columns:repeat(3,minmax(0,1fr))}.field-grid label,.field-row label{font-size:13px;font-weight:650;color:#34505f}.field-grid label input,.field-grid label select,.field-grid label textarea,.field-row label input,.field-row label select{margin-top:6px}.span-2{grid-column:span 2}.input-with-unit{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:6px;margin-top:6px}.input-with-unit input,.input-with-unit select{margin-top:0!important}.help-dot{border:1px solid #a9bac4;width:22px;height:22px;border-radius:50%;padding:0;background:#f7fafb;color:#365b6d;font-weight:800}
+button.primary,button.secondary,button.ghost{min-height:40px;border-radius:9px;padding:8px 13px;font-weight:700}button.primary{border:1px solid var(--brand);background:var(--brand);color:#fff}button.primary:hover{background:#0a3146}button.secondary{border:1px solid #8da4b0;background:#eef4f7;color:#244758}button.secondary:hover{background:#e2edf2}button.ghost{border:1px solid #b8c6cd;background:transparent;color:inherit}.topbar .ghost{border-color:rgba(255,255,255,.35);color:#fff}.danger{color:var(--danger)!important;border-color:#d7aaaa!important}.button-row{display:flex;align-items:center;gap:9px;margin-top:16px}.button-row.wrap{flex-wrap:wrap}.spacer{flex:1}.summary-panel{position:sticky;top:82px;align-self:start}.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.summary-grid>div{background:#f3f7f9;border-radius:10px;padding:12px}.summary-grid span{display:block;color:var(--muted);font-size:12px}.summary-grid strong{display:block;font-size:21px;margin-top:2px}.message{border-radius:9px;padding:10px 12px;margin-top:12px;background:#f3f7f9}.message.error{background:#fff0f0;color:#7c1818;border:1px solid #efc0c0}.message.warning{background:#fff8e6;color:#6d4a00;border:1px solid #ead49a}.message.success{background:#eef8f2;color:#205838;border:1px solid #b9ddc7}
+.element-list{display:flex;flex-direction:column;gap:12px}.element-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fbfdfe}.element-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.element-title{display:flex;align-items:center;gap:9px}.element-index{background:#dce9ef;color:#143c50;border-radius:999px;min-width:28px;height:28px;display:grid;place-items:center;font-weight:800}.element-grid{display:grid;grid-template-columns:100px 1.1fr 1.1fr 1.2fr 120px 120px;gap:8px;align-items:end}.element-grid label{font-size:12px;font-weight:650;color:#425d6a}.element-grid label>*{margin-top:5px}.row-result{display:grid;grid-template-columns:1.15fr 1fr 1fr 1fr;gap:8px;margin-top:12px;padding-top:12px;border-top:1px dashed #cbd7dd}.row-result>div{background:#f4f8fa;padding:9px;border-radius:8px}.row-result span{display:block;font-size:11px;color:var(--muted)}.row-result strong{display:block;margin-top:3px}.scenario-list{font-size:12px;margin-top:8px}.scenario-list div{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-top:1px dotted #d8e1e6}.scenario-list .preferred{font-weight:800;color:#0b596e}
+.result-box{margin-top:16px}.result-card{border-left:4px solid var(--brand2);background:#f4f8fa;border-radius:8px;padding:14px}.result-card h3{margin:0 0 8px}.result-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.result-values div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px}.result-values span{display:block;font-size:12px;color:var(--muted)}.result-values strong{font-size:19px}.stats-grid{display:grid;grid-template-columns:repeat(6,minmax(90px,1fr));gap:8px;margin:10px 0 14px}.stat{background:#f2f7f9;border-radius:9px;padding:10px}.stat span{display:block;font-size:11px;color:var(--muted)}.stat strong{font-size:18px}.inline-controls{display:flex;gap:8px}.inline-controls select{min-width:140px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:720px;background:#fff}th,td{padding:10px 11px;border-bottom:1px solid #e3eaee;text-align:left;font-size:13px;vertical-align:top}th{background:#edf3f6;color:#36515e;position:sticky;top:0}tbody tr:last-child td{border-bottom:0}.inline-form{display:flex;gap:8px;align-items:end;margin-bottom:12px}.inline-form input,.inline-form select{max-width:260px}.additive-form input{max-width:220px}.import-box{display:flex;gap:10px;align-items:end;margin-top:14px}.file-label input{margin-top:6px}
+.help-content{display:grid;grid-template-columns:220px minmax(0,1fr);gap:24px}.help-toc{display:flex;flex-direction:column;position:sticky;top:84px;align-self:start}.help-toc a{padding:8px 9px;border-radius:7px;color:#315969;text-decoration:none}.help-toc a:hover{background:#edf4f6}.help-content article h2{margin-top:28px;padding-top:4px}.help-content article h2:first-child{margin-top:0}.help-content pre{background:#10232d;color:#ecf5f8;padding:15px;border-radius:10px;overflow:auto}.help-content details{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0}.help-content summary{font-weight:700;cursor:pointer}
+.notice{background:#fff5d9;border:1px solid #e4cc80;color:#654a00;border-radius:10px;padding:10px 12px;margin-bottom:14px}.notice button{margin-left:10px}.modal-backdrop{position:fixed;z-index:50;inset:0;background:rgba(10,25,33,.55)}.modal{position:fixed;z-index:60;inset:0;display:grid;place-items:center;padding:20px}.modal-card{width:min(680px,100%);max-height:85vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.3);padding:20px}.tutorial-card{width:min(620px,100%)}.tutorial-progress{height:5px;border-radius:99px;background:#e5ecef;margin-bottom:18px;overflow:hidden}.tutorial-progress::before{content:"";display:block;height:100%;width:var(--progress,0%);background:var(--brand2)}.toast{position:fixed;z-index:100;right:22px;bottom:22px;background:#153744;color:#fff;padding:11px 14px;border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.22);max-width:420px}.bottom-nav{display:none}
+
+.formula-details{border:0}.formula-details>summary{cursor:pointer;font-weight:800;font-size:17px;list-style:none;display:flex;align-items:center;gap:8px}.formula-details>summary::-webkit-details-marker{display:none}.formula-details>summary::before{content:"▶";font-size:12px;transition:transform .15s ease}.formula-details[open]>summary::before{transform:rotate(90deg)}.formula-content{margin-top:16px}.formula-lead{margin:0 0 12px;color:var(--muted)}.formula-block{background:#f3f7f9;border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}.formula-block h3{margin:0 0 8px;font-size:15px}.formula-equation{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#10232d;color:#ecf5f8;border-radius:8px;padding:11px 12px;margin:7px 0;line-height:1.55}.formula-values{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:13px}.formula-values div{padding:4px 0;border-bottom:1px dotted #d8e1e6}.formula-note{font-size:12px;color:var(--muted);margin-top:8px}
+@media(max-width:1120px){.element-grid{grid-template-columns:90px 1fr 1fr;}.element-grid .wide{grid-column:span 2}.row-result{grid-template-columns:repeat(2,1fr)}.field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.two-col{grid-template-columns:1fr}.summary-panel{position:static}.stats-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:760px){body{padding-bottom:68px}.topbar{height:58px;padding:0 12px}.brand strong{font-size:15px;line-height:1.2}.brand small{display:block;opacity:.82;font-size:10px;line-height:1.15;margin-top:2px}.top-actions .ghost{display:none}.sidebar{display:none}.main-content{margin-left:0;padding:74px 10px 20px}.page-heading{align-items:center}.page-heading h1{font-size:23px}.panel{padding:13px;border-radius:12px}.field-row,.field-grid,.field-grid.compact{grid-template-columns:1fr}.span-2{grid-column:auto}.element-grid{grid-template-columns:1fr 1fr}.element-grid label:first-child{grid-column:span 2}.element-grid .wide{grid-column:span 2}.row-result{grid-template-columns:1fr 1fr}.result-values{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}.help-content{grid-template-columns:1fr}.help-toc{position:static;display:grid;grid-template-columns:1fr 1fr}.inline-form,.import-box{align-items:stretch;flex-direction:column}.inline-form input,.inline-form select,.additive-form input{max-width:none}.bottom-nav{position:fixed;z-index:25;display:grid;grid-template-columns:repeat(5,1fr);left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}.bottom-nav .nav-btn{text-align:center;border-radius:0;padding:12px 4px;font-size:12px;min-height:56px}.bottom-nav .nav-btn.active{background:#e5f0f4;color:var(--brand)}.modal{padding:10px}.modal-card{max-height:92vh}.summary-grid{grid-template-columns:1fr 1fr}.button-row{flex-wrap:wrap}.formula-values{grid-template-columns:1fr}}
+
+
+/* Ver.1.0.3: readable calculation process */
+.formula-intro{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-left:4px solid var(--brand);background:#f3f7f9;border-radius:8px;margin-bottom:14px}.formula-intro strong{font-size:15px}.formula-intro span{font-size:13px;color:var(--muted)}
+.formula-legend{border:1px solid var(--line);border-radius:10px;padding:13px 14px;background:#fff;margin-bottom:14px}.formula-legend h3{margin:0 0 10px;font-size:15px}.formula-symbol-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 12px}.formula-symbol-grid>div{display:grid;grid-template-columns:42px 1fr;align-items:center;border-bottom:1px dotted #d8e1e6;padding:6px 0}.formula-symbol-grid strong{font-family:Cambria,"Times New Roman",serif;font-size:18px;color:#153f53}.formula-symbol-grid span{font-size:13px}
+.formula-step{border:1px solid var(--line);border-radius:11px;background:#f8fbfc;padding:13px 14px;margin:12px 0}.formula-step-title{display:flex;align-items:center;gap:9px;font-weight:800;margin-bottom:11px}.formula-step-title>span{display:grid;place-items:center;flex:0 0 26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;font-size:13px}.formula-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.formula-input-grid>div{background:#fff;border:1px solid #dde6ea;border-radius:8px;padding:9px 10px}.formula-input-grid span,.formula-final-grid span{display:block;font-size:11px;color:var(--muted)}.formula-input-grid strong,.formula-final-grid strong{display:block;font-size:15px;margin-top:2px}.formula-input-grid small{display:block;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.formula-math{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;background:#10232d;color:#ecf5f8;border-radius:9px;padding:12px 13px;overflow-x:auto}.formula-line{white-space:pre-wrap;overflow-wrap:anywhere;padding:3px 0}.formula-main{font-size:15px;font-weight:800;color:#fff;border-bottom:1px solid rgba(255,255,255,.16);padding-bottom:8px;margin-bottom:6px}.formula-answer{font-size:16px;font-weight:800;color:#fff;padding-top:8px;margin-top:5px;border-top:1px solid rgba(255,255,255,.16)}
+.formula-final-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}.formula-final-grid>div{background:#fff;border:1px solid #dde6ea;border-radius:8px;padding:9px 10px}.formula-note-top{margin:0 0 10px}.formula-multi-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.formula-multi-row{background:#fff;border:1px solid #dde6ea;border-radius:9px;padding:10px}.formula-multi-row h4{margin:0 0 7px}.formula-multi-row>div{display:flex;justify-content:space-between;gap:8px;border-top:1px dotted #d8e1e6;padding:5px 0;font-size:12px}.formula-multi-row>div span{color:var(--muted)}
+@media(max-width:760px){.formula-symbol-grid,.formula-input-grid,.formula-final-grid,.formula-multi-grid{grid-template-columns:1fr}.formula-step{padding:11px}.formula-math{font-size:12px;padding:11px}.formula-main{font-size:13px}.formula-answer{font-size:14px}}
+
+/* Ver.1.0.4: scale resolution unit selector */
+.scale-resolution-input{margin-top:0;min-width:220px}
+@media(max-width:760px){.scale-resolution-input{min-width:0;width:100%}}
+
+
+.preset-panel .compact-note{margin:3px 0 0}
+.preset-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.preset-controls select{min-width:240px;flex:1}
+.preset-save-form{margin-top:10px;margin-bottom:0}
+.table-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:760px){
+  .summary-element-grid{grid-template-columns:1fr}
+  .preset-controls{align-items:stretch}
+  .preset-controls select{min-width:0;width:100%}
+}
+
+
+/* Ver.1.0.10: select-only element field + per-element summary cards */
+select.row-element-select{appearance:none;-webkit-appearance:none;cursor:pointer;padding-right:34px;background-color:#fff;border-color:#7f9aa8}
+.element-select-field{position:relative}
+.element-select-field::after{content:"▼";position:absolute;right:12px;bottom:14px;font-size:11px;line-height:1;color:#294b5c;pointer-events:none}
+.summary-grid>.summary-element-item{background:#eef6f8;border:1px solid #cfe0e7}
+.summary-grid>.summary-element-item span{color:#294f61;font-weight:700}
+.summary-grid>.summary-element-item strong{color:#0f3447}
+
+/* Ver.1.1.0: result summary addition-unit selector */
+.summary-heading{align-items:flex-end}
+.summary-unit-control{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.summary-unit-control select{min-width:82px;height:36px;padding:6px 28px 6px 9px}
+@media(max-width:760px){.summary-heading{align-items:center}.summary-unit-control{font-size:11px}.summary-unit-control select{min-width:76px;height:34px}}
+
+/* Ver.1.3.0: CSV restore controls */
+.panel-heading-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.master-csv-note{margin:-4px 0 12px;font-size:12px}
+@media(max-width:760px){.panel-heading{align-items:flex-start}.panel-heading-actions{justify-content:flex-end}.panel-heading-actions button{min-height:36px;padding:7px 10px}}
+</style>
+  <style data-standalone="billet-flow-css">.billet-flow-panel{scroll-margin-top:84px}
+.billet-heading{align-items:flex-start}
+.billet-heading .compact-note{margin:3px 0 0;max-width:820px}
+.billet-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.65fr);gap:18px;align-items:start}
+.billet-field-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.billet-inputs .input-with-unit>span{display:flex;align-items:center;justify-content:center;min-height:44px;margin-top:0;border:1px solid #bac8d1;border-radius:9px;background:#f7fafb;color:#34505f;font-size:12px;font-weight:700;padding:0 6px;text-align:center}
+.billet-summary-grid{grid-template-columns:1fr}
+.billet-summary-grid>div{border:1px solid var(--line)}
+.billet-summary-grid strong{font-size:20px}
+.billet-details{margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.billet-process{margin:14px 0 0;background:#10232d;color:#ecf5f8;border-radius:10px;padding:15px;white-space:pre-wrap;overflow-wrap:anywhere;overflow:auto;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:13px;line-height:1.65}
+.billet-measured-field.message{margin-top:12px}
+
+@media(max-width:1120px){
+  .billet-layout{grid-template-columns:1fr}
+  .billet-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .billet-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+
+@media(max-width:760px){
+  .billet-field-grid{grid-template-columns:1fr}
+  .billet-summary-grid{grid-template-columns:1fr 1fr}
+  .billet-inputs .input-with-unit{grid-template-columns:minmax(0,1fr) 92px}
+  .billet-process{font-size:12px;padding:12px}
+}
+
+@media(max-width:430px){
+  .billet-summary-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="appShell">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">Al</span><div><strong>配合計算</strong><small>Ver.1.4.0</small></div></div>
+    <div class="top-actions"><button class="ghost" data-action="open-help">? ヘルプ</button></div>
+  </header>
+
+  <aside class="sidebar" aria-label="メインナビゲーション">
+    <button class="nav-btn active" data-screen="blend">配合計算</button>
+    <button class="nav-btn" data-screen="verify">添加確認</button>
+    <button class="nav-btn" data-screen="yield">歩留まり</button>
+    <button class="nav-btn" data-screen="dilution">希釈計算</button>
+    <button class="nav-btn" data-screen="data">設定・データ</button>
+    <button class="nav-btn" data-screen="help">ヘルプ</button>
+  </aside>
+
+  <main class="main-content">
+    <div id="updateNotice" class="notice hidden">新しいバージョンを利用できます。<button id="reloadApp">更新して再読み込み</button></div>
+
+    <section class="screen active" id="screen-blend">
+      <div class="page-heading"><div><h1>配合計算</h1><p>目標濃度から必要添加量を計算します。複数元素の総添加重量も同時に考慮します。</p></div><button id="loadBlendSample" class="ghost">サンプル入力</button></div>
+      <div class="grid two-col">
+        <section class="panel">
+          <h2>1. 溶湯条件</h2>
+          <div class="field-row">
+            <label>溶湯量 <button class="help-dot" data-help="meltMass" aria-label="溶湯量ヘルプ">?</button>
+              <div class="input-with-unit"><input id="blendMeltMass" type="text" inputmode="decimal" value="1900"><select id="blendMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div>
+            </label>
+            <label>天秤 <button class="help-dot" data-help="scale" aria-label="天秤ヘルプ">?</button><select id="blendScale"></select></label>
+            <label>丸め方式<select id="blendRounding"><option value="half-up">四捨五入</option><option value="ceil">切り上げ</option><option value="floor">切り捨て</option></select></label>
+          </div>
+        </section>
+        <section class="panel summary-panel" id="blendSummary">
+          <div class="panel-heading summary-heading">
+            <h2>結果サマリー</h2>
+            <label class="summary-unit-control">添加量単位
+              <select id="blendSummaryAdditionUnit" aria-label="結果サマリーの添加量表示単位" title="総添加量と元素別添加量の表示単位を変更します。添加後総重量は溶湯量と同じ単位で表示します。">
+                <option value="auto">自動</option>
+                <option value="mg">mg</option>
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="t">t</option>
+              </select>
+            </label>
+          </div>
+          <div id="blendSummaryGrid" class="summary-grid" aria-live="polite">
+            <div class="summary-fixed-item"><span>総添加量</span><strong id="blendTotalAddition">—</strong></div>
+            <div class="summary-fixed-item"><span>添加後総重量</span><strong id="blendFinalMass">—</strong></div>
+          </div>
+          <div id="blendGlobalMessage" class="message muted">元素条件を入力して計算してください。</div>
+          <div class="button-row"><button id="calcBlend" class="primary">計算</button><button id="saveBlendHistory" class="secondary hidden" disabled aria-hidden="true">履歴保存</button></div>
+        </section>
+      </div>
+
+      <section class="panel preset-panel">
+        <div class="panel-heading"><div><h2>プリセット</h2><p class="muted compact-note">目標値・添加材・歩留まりなどを保存します。読み込み時は溶湯量と現在濃度だけ空欄になります。</p></div></div>
+        <div class="preset-controls">
+          <select id="blendPresetSelect" aria-label="プリセット選択"><option value="">プリセットを選択</option></select>
+          <button id="applyBlendPreset" class="secondary" type="button">読み込み</button>
+          <button id="deleteBlendPreset" class="ghost danger" type="button">削除</button>
+        </div>
+        <div class="inline-form preset-save-form">
+          <input id="blendPresetName" placeholder="プリセット名" maxlength="80">
+          <button id="saveBlendPreset" class="secondary" type="button">現在条件を保存</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>2. 元素条件</h2><button id="addBlendRow" class="secondary">+ 元素を追加</button></div>
+        <div id="blendRows" class="element-list"></div>
+      </section>
+
+      <section class="panel hidden" id="blendDetailPanel">
+        <details id="blendDetailDisclosure" class="formula-details">
+          <summary>計算過程（数式）を表示</summary>
+          <div id="blendDetail" class="formula-content"></div>
+        </details>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-verify">
+      <div class="page-heading"><div><h1>添加確認</h1><p>実際の秤量値から添加後濃度を確認します。</p></div></div>
+      <section class="panel form-panel">
+        <div class="field-grid">
+          <label>溶湯量<div class="input-with-unit"><input id="verifyMeltMass" type="text" inputmode="decimal"><select id="verifyMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div></label>
+          <label>元素<select id="verifyElement"></select></label>
+          <label>現在濃度<div class="input-with-unit"><input id="verifyCurrent" type="text" inputmode="decimal"><select id="verifyCurrentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>目標濃度（任意）<div class="input-with-unit"><input id="verifyTarget" type="text" inputmode="decimal"><select id="verifyTargetUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>添加材<select id="verifyAdditive"></select></label>
+          <label>目的元素含有率 (wt%)<input id="verifyAdditivePct" type="text" inputmode="decimal"></label>
+          <label>実添加量<div class="input-with-unit"><input id="verifyAddition" type="text" inputmode="decimal"><select id="verifyAdditionUnit"><option>mg</option><option selected>g</option><option>kg</option></select></div></label>
+          <label>添加歩留まり (%)<input id="verifyYield" type="text" inputmode="decimal" value="100"></label>
+          <label>出力濃度単位<select id="verifyOutputUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></label>
+        </div>
+        <div class="button-row"><button id="calcVerify" class="primary">計算</button><button id="saveVerifyHistory" class="secondary hidden" disabled aria-hidden="true">履歴保存</button></div>
+        <div id="verifyResult" class="result-box"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-yield">
+      <div class="page-heading"><div><h1>歩留まり逆算</h1><p>実添加量と添加後分析値から添加歩留まりを逆算し、実績として保存できます。</p></div></div>
+      <section class="panel form-panel">
+        <div class="field-grid">
+          <label>実施日<input id="yieldDate" type="date"></label>
+          <label>添加前溶湯量<div class="input-with-unit"><input id="yieldMeltMass" type="text" inputmode="decimal"><select id="yieldMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div></label>
+          <label>元素<select id="yieldElement"></select></label>
+          <label>添加前分析値<div class="input-with-unit"><input id="yieldBefore" type="text" inputmode="decimal"><select id="yieldBeforeUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>添加後分析値<div class="input-with-unit"><input id="yieldAfter" type="text" inputmode="decimal"><select id="yieldAfterUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>添加材<select id="yieldAdditive"></select></label>
+          <label>目的元素含有率 (wt%)<input id="yieldAdditivePct" type="text" inputmode="decimal"></label>
+          <label>実添加量<div class="input-with-unit"><input id="yieldAddition" type="text" inputmode="decimal"><select id="yieldAdditionUnit"><option>mg</option><option selected>g</option><option>kg</option></select></div></label>
+          <label class="span-2">メモ<textarea id="yieldMemo" rows="2"></textarea></label>
+        </div>
+        <div class="button-row"><button id="calcYield" class="primary">逆算</button><button id="saveYieldRecord" class="secondary" disabled>実績保存</button></div>
+        <div id="yieldResult" class="result-box"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>歩留まり実績</h2><div class="inline-controls"><select id="yieldFilterElement"><option value="">全元素</option></select><button id="refreshYieldRecords" class="ghost">更新</button></div></div>
+        <div id="yieldStats" class="stats-grid"></div>
+        <div class="table-wrap"><table><thead><tr><th>日付</th><th>元素</th><th>添加材</th><th>歩留まり</th><th>採用</th><th>メモ</th><th></th></tr></thead><tbody id="yieldRecordRows"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-dilution">
+      <div class="page-heading"><div><h1>希釈計算</h1><p>濃度過多時に、目標濃度まで下げるための高純度Al追加量を計算します。</p></div></div>
+      <section class="panel form-panel">
+        <div class="field-grid">
+          <label>現在溶湯量<div class="input-with-unit"><input id="dilMeltMass" type="text" inputmode="decimal"><select id="dilMeltUnit"><option>g</option><option selected>kg</option><option>t</option></select></div></label>
+          <label>現在濃度<div class="input-with-unit"><input id="dilCurrent" type="text" inputmode="decimal"><select id="dilCurrentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>目標濃度<div class="input-with-unit"><input id="dilTarget" type="text" inputmode="decimal"><select id="dilTargetUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+          <label>希釈用Al中の目的元素濃度<div class="input-with-unit"><input id="dilDiluent" type="text" inputmode="decimal" value="0"><select id="dilDiluentUnit"><option>wt%</option><option selected>ppm</option><option>ppb</option></select></div></label>
+        </div>
+        <div class="button-row"><button id="calcDilution" class="primary">計算</button><button id="saveDilutionHistory" class="secondary hidden" disabled aria-hidden="true">履歴保存</button></div>
+        <div id="dilutionResult" class="result-box"></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-data">
+      <div class="page-heading"><div><h1>設定・データ</h1><p>表示桁数、天秤、添加材、履歴、バックアップを管理します。</p></div></div>
+      <div class="grid two-col">
+        <section class="panel">
+          <h2>表示・計算設定</h2>
+          <div class="field-grid compact">
+            <label>溶湯量 小数桁<input id="setDecMelt" type="number" min="0" max="9"></label>
+            <label>添加量 小数桁<input id="setDecAddition" type="number" min="0" max="9"></label>
+            <label>ppm 小数桁<input id="setDecPpm" type="number" min="0" max="12"></label>
+            <label>ppb 小数桁<input id="setDecPpb" type="number" min="0" max="12"></label>
+            <label>wt% 小数桁<input id="setDecWt" type="number" min="0" max="12"></label>
+            <label>歩留まり 小数桁<input id="setDecYield" type="number" min="0" max="6"></label>
+          </div>
+          <div class="button-row"><button id="saveSettings" class="primary">設定保存</button><button id="restartTutorial" class="secondary">チュートリアルをもう一度見る</button></div>
+        </section>
+        <section class="panel">
+          <h2>バックアップ</h2>
+          <p class="muted">業務データと設定をJSONで保存・復元できます。</p>
+          <div class="button-row wrap"><button id="exportJson" class="primary">JSONバックアップ</button><button id="exportYieldCsv" class="secondary">歩留まりCSV</button><button id="exportHistoryCsv" class="secondary">履歴CSV</button><button id="importHistoryCsvBtn" class="secondary" type="button">履歴CSV復元</button><input id="importHistoryCsv" class="hidden" type="file" accept=".csv,text/csv"></div>
+          <div class="import-box"><label>復元方式<select id="importMode"><option value="merge">既存データへ追加</option><option value="replace">全置換</option></select></label><label class="file-label">JSONを選択<input id="importJson" type="file" accept="application/json,.json"></label></div>
+        </section>
+      </div>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>天秤マスタ</h2><div class="panel-heading-actions"><button id="exportScaleCsv" class="ghost" type="button">CSV出力</button><button id="importScaleCsvBtn" class="secondary" type="button">CSV復元</button><input id="importScaleCsv" class="hidden" type="file" accept=".csv,text/csv"></div></div>
+        <p class="muted master-csv-note">CSV復元は、CSV内のIDと同じ登録を上書きし、未登録IDを追加します。CSVにない既存データは残ります。</p>
+        <form id="scaleForm" class="inline-form"><input id="scaleName" placeholder="名称 例: 天秤A" required><div class="input-with-unit scale-resolution-input"><input id="scaleResolution" placeholder="分解能 例: 0.01" inputmode="decimal" required><select id="scaleResolutionUnit" aria-label="天秤分解能の単位"><option value="g">g</option><option value="kg">kg</option></select></div><button id="scaleSubmitBtn" class="secondary" type="submit">追加</button><button id="cancelScaleEdit" class="ghost hidden" type="button">編集取消</button></form>
+        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分解能</th><th>有効</th><th>操作</th></tr></thead><tbody id="scaleRows"></tbody></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>添加材マスタ</h2><div class="panel-heading-actions"><button id="exportAdditiveCsv" class="ghost" type="button">CSV出力</button><button id="importAdditiveCsvBtn" class="secondary" type="button">CSV復元</button><input id="importAdditiveCsv" class="hidden" type="file" accept=".csv,text/csv"></div></div>
+        <p class="muted master-csv-note">CSV復元は、CSV内のIDと同じ登録を上書きし、未登録IDを追加します。CSVにない既存データは残ります。</p>
+        <form id="additiveForm" class="inline-form additive-form"><input id="addName" placeholder="名称 例: 純Cu" required><select id="addType"><option value="pure">純元素</option><option value="master">母合金</option></select><input id="addElement" placeholder="主元素 例: Cu" required><input id="addPct" placeholder="含有率 wt%" inputmode="decimal" required><input id="addNote" placeholder="備考(任意)"><button id="additiveSubmitBtn" class="secondary" type="submit">追加</button><button id="cancelAdditiveEdit" class="ghost hidden" type="button">編集取消</button></form>
+        <div class="table-wrap"><table><thead><tr><th>名称</th><th>分類</th><th>主元素</th><th>含有率</th><th>備考</th><th>有効</th><th>操作</th></tr></thead><tbody id="additiveRows"></tbody></table></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading"><h2>計算履歴</h2><button id="clearHistory" class="danger ghost">履歴を全削除</button></div>
+        <p class="muted master-csv-note">履歴CSV復元は、アプリから出力した履歴CSVを読み込みます。同一の日時・種類・概要・データ内容が既にある履歴は重複登録しません。</p>
+        <div class="table-wrap"><table><thead><tr><th>日時</th><th>種類</th><th>概要</th><th></th></tr></thead><tbody id="historyRows"></tbody></table></div>
+      </section>
+    </section>
+
+    <section class="screen" id="screen-help">
+      <div class="page-heading"><div><h1>ヘルプ</h1><p>計算式と基本操作はすべてオフラインで確認できます。</p></div></div>
+      <section class="panel help-content" id="helpContent">
+        <nav class="help-toc">
+          <a href="#h-purpose">アプリの目的</a><a href="#h-basic">基本的な配合計算</a><a href="#h-units">ppm / wt% / ppb</a><a href="#h-additive">純元素と母合金</a><a href="#h-yield">添加歩留まり</a><a href="#h-round">天秤分解能</a><a href="#h-dilution">希釈計算</a><a href="#h-formulas">計算式</a><a href="#h-data">データ保存</a><a href="#h-faq">FAQ</a>
+        </nav>
+        <article>
+          <h2 id="h-purpose">アプリの目的</h2><p>純Al～高純度Alを母材とし、Cu・Si・Ti等を添加する配合作業を支援します。配合計算、添加確認、歩留まり逆算、希釈計算を1つのPWAで扱います。</p>
+          <h2 id="h-basic">基本的な配合計算</h2><ol><li>溶湯量と天秤を設定します。</li><li>元素ごとに現在濃度と目標濃度を入力します。</li><li>添加材と目的元素含有率、歩留まりを設定します。</li><li>「計算」で理論添加量、推奨秤量値、丸め後予想濃度を確認します。</li></ol>
+          <h2 id="h-units">ppm / wt% / ppb</h2><p>内部ではすべて質量分率に変換します。1 wt% = 10,000 ppm = 10,000,000 ppbです。表示単位が異なっても同じ質量基準として計算します。</p>
+          <h2 id="h-additive">純元素と母合金</h2><p>純元素は、使用する添加材の分析値または保証純度に応じて目的元素含有率を登録します。母合金はAl-5TiならTi 5.000 wt%として登録します。Ver.1.0では主目的元素のみを計算対象とし、副次成分の連成はVer.2.0対象です。</p>
+          <h2 id="h-yield">添加歩留まり</h2><p>添加した目的元素のうち、計算上溶湯中に有効残留した割合です。100%では全量有効とみなします。逆算値が0%未満または100%超でも自動補正はしません。</p>
+          <h2 id="h-round">天秤分解能と秤量丸め</h2><p>理論値とは別に、天秤分解能に基づく下側・四捨五入・上側の秤量候補を再計算します。天秤マスタでは分解能の単位をgまたはkgで登録できます。表示の丸めは内部計算精度に影響しません。</p>
+          <h2 id="h-dilution">希釈計算</h2><p>現在濃度が目標濃度を上回った場合、希釈用Alの目的元素濃度も考慮して必要追加量を求めます。希釈材濃度は目標濃度より低い必要があります。</p>
+          <h2 id="h-formulas">計算式（標準モデルA）</h2><pre>C1 = (M*C0 + x*P*Y) / (M+x)
+
+x = M*(Ct-C0) / (P*Y-Ct)
+
+Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度、Ct: 目標濃度、C1: 添加後濃度、P: 添加材中目的元素質量分率、Y: 歩留まり、x: 添加材重量。</p>
+          <h2 id="h-data">データ保存とバックアップ</h2><p>設定はlocalStorage、添加材・天秤・歩留まり実績・計算履歴・配合プリセットはIndexedDBに保存します。計算履歴は計算成功時に自動保存されます。ブラウザデータ消去に備え、定期的なJSONバックアップを推奨します。</p>
+          <h2 id="h-faq">よくある質問</h2><details><summary>サーバーは必要ですか？</summary><p>計算自体には不要です。PWAとしてインストールする場合は初回配布にHTTPSまたはlocalhostが必要です。インストール後はオフラインで動作します。</p></details><details><summary>歩留まりが100%を超えました。</summary><p>分析値、溶湯重量、実添加量、サンプリングばらつき等を確認してください。値は自動的に100%へ補正しません。</p></details><details><summary>複数元素を同時に計算できますか？</summary><p>できます。Ver.1.0では各添加材が共通の最終総重量を増加させる効果まで連立で考慮します。</p></details>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="モバイルナビゲーション">
+    <button class="nav-btn active" data-screen="blend">配合</button><button class="nav-btn" data-screen="verify">確認</button><button class="nav-btn" data-screen="yield">歩留</button><button class="nav-btn" data-screen="dilution">希釈</button><button class="nav-btn" data-screen="data">設定</button>
+  </nav>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop hidden" role="presentation"></div>
+<div id="helpModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle"><div class="modal-card"><div class="panel-heading"><h2 id="helpModalTitle">ヘルプ</h2><button class="ghost" data-action="close-modal">閉じる</button></div><div id="helpModalBody"></div></div></div>
+<div id="tutorialModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle"><div class="modal-card tutorial-card"><div class="tutorial-progress" id="tutorialProgress"></div><h2 id="tutorialTitle"></h2><div id="tutorialBody"></div><div class="button-row"><button id="tutorialSkip" class="ghost">スキップ</button><span class="spacer"></span><button id="tutorialPrev" class="secondary">戻る</button><button id="tutorialNext" class="primary">次へ</button></div></div></div>
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>window.APP_VERSION='1.4.0';</script>
+<script data-standalone="js/vendor/decimal-lite.js">/* DecimalLite v1.0.0 - dependency-free arbitrary precision decimal arithmetic for Al Blend PWA.
+ * Stores decimals as BigInt coefficient + base-10 scale. Supports the operations required by the app.
+ */
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.DecimalLite = api;
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  const POW10 = [1n];
+  function pow10(n) {
+    n = Number(n);
+    if (n < 0 || !Number.isInteger(n)) throw new Error('Invalid power');
+    while (POW10.length <= n) POW10.push(POW10[POW10.length - 1] * 10n);
+    return POW10[n];
+  }
+
+  function normalize(n, s) {
+    if (n === 0n) return { n: 0n, s: 0 };
+    while (s > 0 && n % 10n === 0n) {
+      n /= 10n;
+      s -= 1;
+    }
+    return { n, s };
+  }
+
+  function parseValue(value) {
+    if (value instanceof DecimalLite) return { n: value.n, s: value.s };
+    if (typeof value === 'bigint') return { n: value, s: 0 };
+    if (typeof value === 'number') {
+      if (!Number.isFinite(value)) throw new Error('Non-finite decimal');
+      value = String(value);
+    }
+    if (typeof value !== 'string') value = String(value);
+    let str = value.trim();
+    if (!str) throw new Error('Empty decimal');
+    let sign = 1n;
+    if (str[0] === '+') str = str.slice(1);
+    else if (str[0] === '-') { sign = -1n; str = str.slice(1); }
+
+    const m = str.match(/^(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/);
+    if (!m || (!m[1] && !m[2])) throw new Error('Invalid decimal: ' + value);
+    const intPart = m[1] || '0';
+    const fracPart = m[2] || '';
+    const exp = parseInt(m[3] || '0', 10);
+    let digits = (intPart + fracPart).replace(/^0+(?=\d)/, '') || '0';
+    let scale = fracPart.length - exp;
+    let n = BigInt(digits) * sign;
+    if (scale < 0) {
+      n *= pow10(-scale);
+      scale = 0;
+    }
+    return normalize(n, scale);
+  }
+
+  function roundedQuotient(num, den, mode) {
+    if (den === 0n) throw new Error('Division by zero');
+    let sign = 1n;
+    if (num < 0n) { num = -num; sign = -sign; }
+    if (den < 0n) { den = -den; sign = -sign; }
+    const q = num / den;
+    const r = num % den;
+    if (r === 0n) return q * sign;
+
+    let inc = false;
+    switch (mode) {
+      case 'half-up': inc = (r * 2n >= den); break;
+      case 'ceil': inc = sign > 0n; break;
+      case 'floor': inc = sign < 0n; break;
+      case 'trunc': inc = false; break;
+      default: throw new Error('Unknown rounding mode: ' + mode);
+    }
+    return (q + (inc ? 1n : 0n)) * sign;
+  }
+
+  class DecimalLite {
+    constructor(value, _scale) {
+      if (_scale !== undefined) {
+        const z = normalize(BigInt(value), Number(_scale));
+        this.n = z.n; this.s = z.s;
+      } else {
+        const z = parseValue(value);
+        this.n = z.n; this.s = z.s;
+      }
+      Object.freeze(this);
+    }
+
+    static from(v) { return v instanceof DecimalLite ? v : new DecimalLite(v); }
+    static zero() { return new DecimalLite(0); }
+    static one() { return new DecimalLite(1); }
+
+    align(other) {
+      other = DecimalLite.from(other);
+      const s = Math.max(this.s, other.s);
+      return [this.n * pow10(s - this.s), other.n * pow10(s - other.s), s];
+    }
+
+    add(other) {
+      const [a, b, s] = this.align(other);
+      return new DecimalLite(a + b, s);
+    }
+    sub(other) {
+      const [a, b, s] = this.align(other);
+      return new DecimalLite(a - b, s);
+    }
+    mul(other) {
+      other = DecimalLite.from(other);
+      return new DecimalLite(this.n * other.n, this.s + other.s);
+    }
+    div(other, precision = 40, mode = 'half-up') {
+      other = DecimalLite.from(other);
+      if (other.n === 0n) throw new Error('Division by zero');
+      precision = Math.max(0, Math.floor(precision));
+      const exp = other.s + precision - this.s;
+      let num = this.n;
+      let den = other.n;
+      if (exp >= 0) num *= pow10(exp);
+      else den *= pow10(-exp);
+      const q = roundedQuotient(num, den, mode);
+      return new DecimalLite(q, precision);
+    }
+    abs() { return this.n < 0n ? new DecimalLite(-this.n, this.s) : this; }
+    neg() { return new DecimalLite(-this.n, this.s); }
+    cmp(other) {
+      const [a, b] = this.align(other);
+      return a < b ? -1 : a > b ? 1 : 0;
+    }
+    eq(o) { return this.cmp(o) === 0; }
+    lt(o) { return this.cmp(o) < 0; }
+    lte(o) { return this.cmp(o) <= 0; }
+    gt(o) { return this.cmp(o) > 0; }
+    gte(o) { return this.cmp(o) >= 0; }
+    isZero() { return this.n === 0n; }
+
+    round(dp = 0, mode = 'half-up') {
+      dp = Math.max(0, Math.floor(dp));
+      if (this.s <= dp) return this;
+      const cut = this.s - dp;
+      const den = pow10(cut);
+      const q = roundedQuotient(this.n, den, mode);
+      return new DecimalLite(q, dp);
+    }
+
+    quantize(step, mode = 'half-up') {
+      step = DecimalLite.from(step);
+      if (step.lte(0)) throw new Error('Step must be > 0');
+      const units = this.div(step, 0, mode);
+      return units.mul(step);
+    }
+
+    toString() {
+      if (this.n === 0n) return '0';
+      const neg = this.n < 0n;
+      let digits = (neg ? -this.n : this.n).toString();
+      if (this.s === 0) return (neg ? '-' : '') + digits;
+      if (digits.length <= this.s) digits = '0'.repeat(this.s - digits.length + 1) + digits;
+      const p = digits.length - this.s;
+      let out = digits.slice(0, p) + '.' + digits.slice(p);
+      out = out.replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+      return (neg ? '-' : '') + out;
+    }
+
+    toFixed(dp = 0, mode = 'half-up') {
+      dp = Math.max(0, Math.floor(dp));
+      const r = this.round(dp, mode);
+      const neg = r.n < 0n;
+      let digits = (neg ? -r.n : r.n).toString();
+      const scale = r.s;
+      if (scale === 0) {
+        return (neg ? '-' : '') + digits + (dp ? '.' + '0'.repeat(dp) : '');
+      }
+      if (digits.length <= scale) digits = '0'.repeat(scale - digits.length + 1) + digits;
+      const p = digits.length - scale;
+      let intPart = digits.slice(0, p);
+      let frac = digits.slice(p);
+      if (frac.length < dp) frac += '0'.repeat(dp - frac.length);
+      else if (frac.length > dp) frac = frac.slice(0, dp);
+      return (neg ? '-' : '') + intPart + (dp ? '.' + frac : '');
+    }
+
+    toNumber() { return Number(this.toString()); }
+    toJSON() { return this.toString(); }
+  }
+
+  DecimalLite.VERSION = '1.0.0';
+  return DecimalLite;
+});
+</script>
+<script data-standalone="js/calc-engine.js">(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./vendor/decimal-lite.js'));
+  else root.CalcEngine = factory(root.DecimalLite);
+})(typeof self !== 'undefined' ? self : this, function (D) {
+  'use strict';
+  if (!D) throw new Error('DecimalLite is required');
+
+  const MASS_TO_G = { mg: '0.001', g: '1', kg: '1000', t: '1000000' };
+  const CONC_DIV = { 'wt%': '100', ppm: '1000000', ppb: '1000000000' };
+  const DP = 48;
+  const PI = D.from('3.1415926535897932384626433832795028841971693993751');
+
+  function dec(v, name = 'value') {
+    try { return D.from(v); }
+    catch (e) { throw new Error(name + ' is invalid'); }
+  }
+
+  function assertPositive(v, name) { if (v.lte(0)) throw new Error(name + ' must be > 0'); }
+  function assertNonNegative(v, name) { if (v.lt(0)) throw new Error(name + ' must be >= 0'); }
+  function positiveInteger(v, name) {
+    const x = dec(v, name); assertPositive(x, name);
+    const n = Number(x.toString());
+    if (!Number.isSafeInteger(n)) throw new Error(name + ' must be a positive integer');
+    return x;
+  }
+
+  function massToGram(value, unit) {
+    if (!MASS_TO_G[unit]) throw new Error('Unsupported mass unit: ' + unit);
+    const x = dec(value, 'mass'); assertNonNegative(x, 'mass');
+    return x.mul(MASS_TO_G[unit]);
+  }
+
+  function gramToMass(valueG, unit) {
+    if (!MASS_TO_G[unit]) throw new Error('Unsupported mass unit: ' + unit);
+    return dec(valueG).div(MASS_TO_G[unit], DP);
+  }
+
+  function gramToDisplayMass(valueG, unit = 'auto') {
+    const g = dec(valueG);
+    if (unit !== 'auto') return { value: gramToMass(g, unit), unit };
+    const a = g.abs();
+    if (a.gte('1000000')) return { value: gramToMass(g, 't'), unit: 't' };
+    if (a.gte('1000')) return { value: gramToMass(g, 'kg'), unit: 'kg' };
+    if (a.lt('1') && !a.isZero()) return { value: gramToMass(g, 'mg'), unit: 'mg' };
+    return { value: g, unit: 'g' };
+  }
+
+  function concentrationToFraction(value, unit) {
+    if (!CONC_DIV[unit]) throw new Error('Unsupported concentration unit: ' + unit);
+    const x = dec(value, 'concentration'); assertNonNegative(x, 'concentration');
+    return x.div(CONC_DIV[unit], DP);
+  }
+
+  function fractionToConcentration(frac, unit) {
+    if (!CONC_DIV[unit]) throw new Error('Unsupported concentration unit: ' + unit);
+    return dec(frac).mul(CONC_DIV[unit]);
+  }
+
+  function percentToFraction(percent, name = 'percent') {
+    const p = dec(percent, name); assertNonNegative(p, name);
+    return p.div(100, DP);
+  }
+
+  function calculateAdditionMass({ meltMassG, currentFraction, targetFraction, additiveFraction, yieldFraction }) {
+    const M = dec(meltMassG, 'melt mass'); assertPositive(M, 'melt mass');
+    const C0 = dec(currentFraction, 'current concentration'); assertNonNegative(C0, 'current concentration');
+    const Ct = dec(targetFraction, 'target concentration'); assertNonNegative(Ct, 'target concentration');
+    const P = dec(additiveFraction, 'additive fraction'); assertPositive(P, 'additive fraction');
+    const Y = dec(yieldFraction, 'yield'); assertPositive(Y, 'yield');
+    if (C0.gt(Ct)) throw new Error('Current concentration exceeds target; use dilution calculation');
+    if (C0.eq(Ct)) return D.zero();
+    const denom = P.mul(Y).sub(Ct);
+    if (denom.lte(0)) throw new Error('Target concentration is at or above effective additive concentration');
+    return M.mul(Ct.sub(C0)).div(denom, DP);
+  }
+
+  function calculateFinalConcentration({ meltMassG, currentFraction, additionMassG, additiveFraction, yieldFraction, totalOtherAdditionG = 0 }) {
+    const M = dec(meltMassG); assertPositive(M, 'melt mass');
+    const C0 = dec(currentFraction); assertNonNegative(C0, 'current concentration');
+    const x = dec(additionMassG); assertNonNegative(x, 'addition mass');
+    const P = dec(additiveFraction); assertPositive(P, 'additive fraction');
+    const Y = dec(yieldFraction); assertNonNegative(Y, 'yield');
+    const other = dec(totalOtherAdditionG); assertNonNegative(other, 'other additions');
+    const numerator = M.mul(C0).add(x.mul(P).mul(Y));
+    const denominator = M.add(x).add(other);
+    return numerator.div(denominator, DP);
+  }
+
+  function calculateYield({ meltMassG, currentFraction, finalFraction, additionMassG, additiveFraction }) {
+    const M = dec(meltMassG); assertPositive(M, 'melt mass');
+    const C0 = dec(currentFraction); assertNonNegative(C0, 'current concentration');
+    const C1 = dec(finalFraction); assertNonNegative(C1, 'final concentration');
+    const x = dec(additionMassG); assertPositive(x, 'addition mass');
+    const P = dec(additiveFraction); assertPositive(P, 'additive fraction');
+    const numerator = C1.mul(M.add(x)).sub(M.mul(C0));
+    return numerator.div(x.mul(P), DP);
+  }
+
+  function calculateDilutionMass({ meltMassG, currentFraction, targetFraction, diluentFraction }) {
+    const M = dec(meltMassG); assertPositive(M, 'melt mass');
+    const C0 = dec(currentFraction); assertNonNegative(C0, 'current concentration');
+    const Ct = dec(targetFraction); assertNonNegative(Ct, 'target concentration');
+    const Cd = dec(diluentFraction); assertNonNegative(Cd, 'diluent concentration');
+    if (!C0.gt(Ct)) throw new Error('Current concentration must be greater than target');
+    if (!Ct.gt(Cd)) throw new Error('Diluent concentration must be lower than target');
+    return M.mul(C0.sub(Ct)).div(Ct.sub(Cd), DP);
+  }
+
+  function calculateRoundedScenarios({ theoreticalMassG, resolutionG, finalConcentrationFn, roundingMode = 'half-up' }) {
+    const x = dec(theoreticalMassG); assertNonNegative(x, 'theoretical mass');
+    const r = dec(resolutionG); assertPositive(r, 'resolution');
+    const nearest = x.quantize(r, 'half-up');
+    const lower = x.quantize(r, 'floor');
+    const upper = x.quantize(r, 'ceil');
+    const preferred = roundingMode === 'ceil' ? upper : roundingMode === 'floor' ? lower : nearest;
+    const unique = [];
+    const seen = new Set();
+    for (const [kind, mass] of [['lower', lower], ['nearest', nearest], ['upper', upper]]) {
+      const key = mass.toString();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push({ kind, massG: mass, finalFraction: finalConcentrationFn ? finalConcentrationFn(mass) : null });
+    }
+    return { preferredMassG: preferred, lowerMassG: lower, nearestMassG: nearest, upperMassG: upper, scenarios: unique };
+  }
+
+  // Exact coupled solution for multiple independent additives under Model A.
+  // Each additive changes the common final total mass; cross-element chemistry is deferred to Ver.2.
+  function calculateMultiElementBatch({ meltMassG, rows }) {
+    const M = dec(meltMassG); assertPositive(M, 'melt mass');
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error('At least one element is required');
+    const prepared = rows.map((r, idx) => {
+      const C0 = dec(r.currentFraction, `row ${idx + 1} current`);
+      const Ct = dec(r.targetFraction, `row ${idx + 1} target`);
+      const P = dec(r.additiveFraction, `row ${idx + 1} additive`);
+      const Y = dec(r.yieldFraction, `row ${idx + 1} yield`);
+      assertNonNegative(C0, 'current concentration'); assertNonNegative(Ct, 'target concentration');
+      assertPositive(P, 'additive fraction'); assertPositive(Y, 'yield');
+      if (C0.gt(Ct)) throw new Error(`${r.element || 'Element'} current concentration exceeds target`);
+      const PY = P.mul(Y);
+      if (Ct.gte(PY)) throw new Error(`${r.element || 'Element'} target is at or above effective additive concentration`);
+      // x_i = a_i + b_i*S where S = total addition mass.
+      const a = M.mul(Ct.sub(C0)).div(PY, DP);
+      const b = Ct.div(PY, DP);
+      return { ...r, C0, Ct, P, Y, a, b };
+    });
+
+    const A = prepared.reduce((s, r) => s.add(r.a), D.zero());
+    const B = prepared.reduce((s, r) => s.add(r.b), D.zero());
+    const oneMinusB = D.one().sub(B);
+    if (oneMinusB.lte(0)) throw new Error('Combined targets are mathematically infeasible');
+    const totalAdditionG = A.div(oneMinusB, DP);
+    const outRows = prepared.map(r => {
+      const x = r.a.add(r.b.mul(totalAdditionG));
+      return { ...r, theoreticalMassG: x };
+    });
+    const finalMassG = M.add(totalAdditionG);
+    return { rows: outRows, totalAdditionG, finalMassG };
+  }
+
+  function finalConcentrationsForBatch({ meltMassG, rows, additionMassesG }) {
+    const M = dec(meltMassG); assertPositive(M, 'melt mass');
+    const masses = additionMassesG.map(dec);
+    const S = masses.reduce((s, x) => s.add(x), D.zero());
+    const denominator = M.add(S);
+    return rows.map((r, i) => {
+      const C0 = dec(r.currentFraction);
+      const P = dec(r.additiveFraction);
+      const Y = dec(r.yieldFraction);
+      const numerator = M.mul(C0).add(masses[i].mul(P).mul(Y));
+      return numerator.div(denominator, DP);
+    });
+  }
+
+  function calculateBilletUnitWeight({ diameterMm, densityGPerCm3 }) {
+    const diameter = dec(diameterMm, 'billet diameter'); assertPositive(diameter, 'billet diameter');
+    const density = dec(densityGPerCm3, 'density'); assertPositive(density, 'density');
+    const areaMm2 = PI.mul(diameter.mul(diameter)).div(4, DP);
+    // 1 m = 1000 mm and 1 cm3 = 1000 mm3, so the numeric value of
+    // area[mm2] equals volume[cm3] for a 1 m long cylinder.
+    const volumeCm3PerM = areaMm2;
+    const unitWeightKgPerM = volumeCm3PerM.mul(density).div(1000, DP);
+    return { diameterMm: diameter, densityGPerCm3: density, areaMm2, volumeCm3PerM, unitWeightKgPerM };
+  }
+
+  function calculateBilletFlow({ unitWeightKgPerM, castingSpeedMmPerMin }) {
+    const unitWeight = dec(unitWeightKgPerM, 'billet unit weight'); assertPositive(unitWeight, 'billet unit weight');
+    const speedMmPerMin = dec(castingSpeedMmPerMin, 'casting speed'); assertPositive(speedMmPerMin, 'casting speed');
+    const speedMPerMin = speedMmPerMin.div(1000, DP);
+    const flowKgPerMin = unitWeight.mul(speedMPerMin);
+    return { unitWeightKgPerM: unitWeight, castingSpeedMmPerMin: speedMmPerMin, speedMPerMin, flowKgPerMin };
+  }
+
+  function calculateTotalCastingFlow({ flowKgPerMin, billetCount }) {
+    const flow = dec(flowKgPerMin, 'flow'); assertNonNegative(flow, 'flow');
+    const count = positiveInteger(billetCount, 'billet count');
+    return { flowKgPerMin: flow, billetCount: count, totalFlowKgPerMin: flow.mul(count) };
+  }
+
+  function calculateBilletWeight({ unitWeightKgPerM, billetLengthMm, billetCount = 1 }) {
+    const unitWeight = dec(unitWeightKgPerM, 'billet unit weight'); assertPositive(unitWeight, 'billet unit weight');
+    const lengthMm = dec(billetLengthMm, 'billet length'); assertPositive(lengthMm, 'billet length');
+    const count = positiveInteger(billetCount, 'billet count');
+    const lengthM = lengthMm.div(1000, DP);
+    const oneBilletWeightKg = unitWeight.mul(lengthM);
+    return {
+      unitWeightKgPerM: unitWeight,
+      billetLengthMm: lengthMm,
+      billetLengthM: lengthM,
+      billetCount: count,
+      oneBilletWeightKg,
+      totalBilletWeightKg: oneBilletWeightKg.mul(count)
+    };
+  }
+
+  return {
+    VERSION: '1.4.0', Decimal: D, massToGram, gramToMass, gramToDisplayMass,
+    concentrationToFraction, fractionToConcentration, percentToFraction,
+    calculateAdditionMass, calculateFinalConcentration, calculateYield,
+    calculateDilutionMass, calculateRoundedScenarios, calculateMultiElementBatch,
+    finalConcentrationsForBatch, calculateBilletUnitWeight, calculateBilletFlow,
+    calculateTotalCastingFlow, calculateBilletWeight
+  };
+});
+</script>
+<script data-standalone="js/storage.js">(function (root) {
+  'use strict';
+  const DB_NAME = 'AlBlendPWA';
+  const DB_VERSION = 1;
+  const STORES = ['additives', 'yieldRecords', 'calculationHistory', 'scales', 'productRecipes', 'appMetadata'];
+  let dbPromise = null;
+
+  const DEFAULT_SETTINGS = {
+    massUnit: 'kg', concUnit: 'ppm', additionUnit: 'auto', summaryAdditionUnit: 'auto', roundingMode: 'half-up',
+    decimals: { melt: 3, addition: 3, ppm: 3, ppb: 1, wt: 6, yield: 2 },
+    lastScreen: 'blend'
+  };
+
+  function uid(prefix = 'id') {
+    if (root.crypto && root.crypto.randomUUID) return `${prefix}-${root.crypto.randomUUID()}`;
+    return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function openDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('additives')) db.createObjectStore('additives', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('yieldRecords')) {
+          const s = db.createObjectStore('yieldRecords', { keyPath: 'id' });
+          s.createIndex('element', 'element'); s.createIndex('additiveId', 'additiveId'); s.createIndex('date', 'date');
+        }
+        if (!db.objectStoreNames.contains('calculationHistory')) {
+          const s = db.createObjectStore('calculationHistory', { keyPath: 'id' });
+          s.createIndex('date', 'date'); s.createIndex('type', 'type');
+        }
+        if (!db.objectStoreNames.contains('scales')) db.createObjectStore('scales', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('productRecipes')) db.createObjectStore('productRecipes', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('appMetadata')) db.createObjectStore('appMetadata', { keyPath: 'key' });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbPromise;
+  }
+
+  async function tx(store, mode, fn) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const t = db.transaction(store, mode);
+      const s = t.objectStore(store);
+      let result;
+      try { result = fn(s); } catch (e) { reject(e); return; }
+      t.oncomplete = () => resolve(result);
+      t.onerror = () => reject(t.error);
+      t.onabort = () => reject(t.error || new Error('Transaction aborted'));
+    });
+  }
+
+  async function getAll(store) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(store, 'readonly').objectStore(store).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function get(store, key) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(store, 'readonly').objectStore(store).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function put(store, value) { await tx(store, 'readwrite', s => s.put(value)); return value; }
+  async function putMany(store, values) {
+    const rows = Array.isArray(values) ? values : [];
+    await tx(store, 'readwrite', s => { rows.forEach(value => s.put(value)); });
+    return rows;
+  }
+  async function remove(store, key) { await tx(store, 'readwrite', s => s.delete(key)); }
+  async function clear(store) { await tx(store, 'readwrite', s => s.clear()); }
+
+  function getSettings() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('alBlendSettings') || '{}');
+      return { ...DEFAULT_SETTINGS, ...raw, decimals: { ...DEFAULT_SETTINGS.decimals, ...(raw.decimals || {}) } };
+    } catch (_) { return JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); }
+  }
+  function saveSettings(settings) { localStorage.setItem('alBlendSettings', JSON.stringify(settings)); }
+
+  async function seedDefaults() {
+    const meta = await get('appMetadata', 'seeded');
+    if (meta) return;
+    const additives = [
+      { id:'add-5n-cu', name:'Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-si', name:'Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-5n-ti', name:'Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+      { id:'add-al5ti', name:'Al-5Ti', type:'master', mainElement:'Ti', components:[{element:'Ti', wtPercent:'5.000'}], purity:'', maker:'', partNo:'', note:'Al balance', active:true }
+    ];
+    const scales = [
+      { id:'scale-001', name:'0.001 g 天秤', resolutionValue:'0.001', resolutionUnit:'g', resolutionG:'0.001', active:true },
+      { id:'scale-01', name:'0.01 g 天秤', resolutionValue:'0.01', resolutionUnit:'g', resolutionG:'0.01', active:true },
+      { id:'scale-1', name:'0.1 g 天秤', resolutionValue:'0.1', resolutionUnit:'g', resolutionG:'0.1', active:true },
+      { id:'scale-100', name:'1 g 天秤', resolutionValue:'1', resolutionUnit:'g', resolutionG:'1', active:true }
+    ];
+    for (const a of additives) await put('additives', a);
+    for (const s of scales) await put('scales', s);
+    await put('appMetadata', { key:'seeded', value:true, at:new Date().toISOString() });
+    await put('appMetadata', { key:'schemaVersion', value:1 });
+  }
+
+  async function migrateAppData() {
+    const presetKey = 'migration-1.0.2-restore-pure-presets-without-5n-label';
+    if (!(await get('appMetadata', presetKey))) {
+      const presets = [
+        { id:'add-5n-cu', name:'Cu', type:'pure', mainElement:'Cu', components:[{element:'Cu', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+        { id:'add-5n-si', name:'Si', type:'pure', mainElement:'Si', components:[{element:'Si', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true },
+        { id:'add-5n-ti', name:'Ti', type:'pure', mainElement:'Ti', components:[{element:'Ti', wtPercent:'99.999'}], purity:'99.999', maker:'', partNo:'', note:'', active:true }
+      ];
+      for (const preset of presets) {
+        const current = await get('additives', preset.id);
+        if (current) await put('additives', { ...current, name:preset.name });
+        else await put('additives', preset);
+      }
+      await put('appMetadata', { key:presetKey, value:true, at:new Date().toISOString() });
+    }
+
+    const key = 'migration-1.0.4-scale-unit-and-additive-note';
+    if (!(await get('appMetadata', key))) {
+      for (const scale of await getAll('scales')) {
+        const resolutionUnit = scale.resolutionUnit === 'kg' ? 'kg' : 'g';
+        const resolutionValue = scale.resolutionValue || (resolutionUnit === 'kg'
+          ? String(Number(scale.resolutionG || 0) / 1000)
+          : String(scale.resolutionG || ''));
+        await put('scales', { ...scale, resolutionUnit, resolutionValue });
+      }
+      for (const additive of await getAll('additives')) {
+        if ((!additive.note || additive.note === '') && additive.maker) {
+          await put('additives', { ...additive, note:additive.maker, maker:'' });
+        }
+      }
+      await put('appMetadata', { key, value:true, at:new Date().toISOString() });
+    }
+
+    // Ver.1.4.0: standard blend presets supplied by the user.
+    // Existing same-name presets are preserved and are never overwritten.
+    const preset140Key = 'migration-1.4.0-standard-blend-presets';
+    if (!(await get('appMetadata', preset140Key))) {
+      const additives = await getAll('additives');
+      const scales = await getAll('scales');
+      const recipes = await getAll('productRecipes');
+      const existingNames = new Set(recipes.filter(r => r && r.kind === 'blendPreset').map(r => String(r.name || '').trim().toLowerCase()));
+      const additiveFor = (element, preferredId) => additives.find(a => a.id === preferredId && a.active !== false) || additives.find(a => a.active !== false && String(a.mainElement || '').toLowerCase() === element.toLowerCase());
+      const pctFor = (additive, element) => {
+        if (!additive) return '';
+        const c = (additive.components || []).find(x => String(x.element || '').toLowerCase() === element.toLowerCase()) || (additive.components || [])[0];
+        return c ? String(c.wtPercent ?? '') : '';
+      };
+      const cu = additiveFor('Cu', 'add-5n-cu');
+      const si = additiveFor('Si', 'add-5n-si');
+      const oneGramScale = scales.find(s => s.active !== false && Number(s.resolutionG) === 1) || null;
+      const defs = [
+        ['025C',    [['Cu','0.25','wt%']]],
+        ['03C',     [['Cu','0.30','wt%']]],
+        ['05C',     [['Cu','0.50','wt%']]],
+        ['1C',      [['Cu','1','wt%']]],
+        ['2C',      [['Cu','2','wt%']]],
+        ['4C',      [['Cu','4','wt%']]],
+        ['8C',      [['Cu','8','wt%']]],
+        ['02S05C',  [['Cu','0.50','wt%'],['Si','0.20','wt%']]],
+        ['075S05C', [['Cu','0.50','wt%'],['Si','0.75','wt%']]],
+        ['08S03C',  [['Cu','0.30','wt%'],['Si','0.80','wt%']]],
+        ['08S05C',  [['Cu','0.50','wt%'],['Si','0.80','wt%']]],
+        ['1S004C',  [['Cu','0.04','wt%'],['Si','1','wt%']]],
+        ['1S05C',   [['Cu','0.50','wt%'],['Si','1','wt%']]],
+        ['03S',     [['Si','0.30','wt%']]],
+        ['05S',     [['Si','0.50','wt%']]],
+        ['08S',     [['Si','0.80','wt%']]],
+        ['1S',      [['Si','1','wt%']]],
+        ['1.2S',    [['Si','1.20','wt%']]],
+        ['30ppmS',  [['Si','30','ppm']]]
+      ];
+      for (const [name, targets] of defs) {
+        if (existingNames.has(name.toLowerCase())) continue;
+        const rows = targets.map(([element,target,targetUnit]) => {
+          const a = element === 'Cu' ? cu : si;
+          return {
+            element,
+            current:'',
+            currentUnit:'ppm',
+            target,
+            targetUnit,
+            additiveId:a ? a.id : '',
+            additivePct:pctFor(a, element),
+            yield:'100',
+            yieldSource:'manual'
+          };
+        });
+        await put('productRecipes', {
+          id:`default-preset-${name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}`,
+          kind:'blendPreset',
+          name,
+          data:{meltUnit:'kg', scaleId:oneGramScale ? oneGramScale.id : '', roundingMode:'half-up', rows},
+          systemDefault:true,
+          defaultRevision:1,
+          createdAt:new Date().toISOString(),
+          updatedAt:new Date().toISOString()
+        });
+        existingNames.add(name.toLowerCase());
+      }
+      await put('appMetadata', { key:preset140Key, value:true, at:new Date().toISOString() });
+    }
+  }
+
+  async function exportAll() {
+    const data = {};
+    for (const s of STORES) data[s] = await getAll(s);
+    return {
+      appVersion: root.APP_VERSION || '1.4.0', dbSchemaVersion: DB_VERSION,
+      exportedAt: new Date().toISOString(), settings: getSettings(), data
+    };
+  }
+
+  async function importAll(backup, mode = 'merge') {
+    if (!backup || !backup.data) throw new Error('バックアップ形式が不正です。');
+    if (mode === 'replace') {
+      for (const s of STORES) await clear(s);
+    }
+    for (const s of STORES) {
+      const rows = Array.isArray(backup.data[s]) ? backup.data[s] : [];
+      for (const row of rows) {
+        if (mode === 'merge') {
+          const key = row.id ?? row.key;
+          if (key != null && await get(s, key)) {
+            const copy = { ...row };
+            if ('id' in copy) copy.id = uid(copy.id.split('-')[0] || 'id');
+            else if ('key' in copy) copy.key = `${copy.key}-${Date.now()}`;
+            await put(s, copy);
+            continue;
+          }
+        }
+        await put(s, row);
+      }
+    }
+    if (backup.settings) saveSettings({ ...getSettings(), ...backup.settings, decimals:{...getSettings().decimals, ...(backup.settings.decimals||{})} });
+  }
+
+  root.AppStorage = { DB_NAME, DB_VERSION, STORES, uid, openDB, getAll, get, put, putMany, remove, clear, getSettings, saveSettings, seedDefaults, migrateAppData, exportAll, importAll };
+})(typeof self !== 'undefined' ? self : window);
+</script>
+<script data-standalone="js/export.js">(function(root){
+  'use strict';
+  function downloadBlob(content, filename, type='application/octet-stream'){
+    const blob = content instanceof Blob ? content : new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  }
+  function dateStamp(){ return new Date().toISOString().slice(0,10); }
+  function exportJson(obj, filename=`Al配合計算_Backup_${dateStamp()}.json`){ downloadBlob(JSON.stringify(obj,null,2), filename, 'application/json;charset=utf-8'); }
+  function csvEscape(v){ const s=v==null?'':String(v); return /[",\n\r]/.test(s)?`"${s.replace(/"/g,'""')}"`:s; }
+  function exportCsv(headers, rows, filename){ const lines=[headers.map(csvEscape).join(',')]; rows.forEach(r=>lines.push(r.map(csvEscape).join(','))); downloadBlob('\ufeff'+lines.join('\r\n'), filename, 'text/csv;charset=utf-8'); }
+
+  // RFC4180相当の基本CSVパーサー。UTF-8 BOM、CRLF/LF、引用符、引用符内改行に対応。
+  function parseCsv(text){
+    const src=String(text??'').replace(/^\uFEFF/,'');
+    const rows=[]; let row=[]; let field=''; let quoted=false;
+    for(let i=0;i<src.length;i++){
+      const ch=src[i];
+      if(quoted){
+        if(ch==='"'){
+          if(src[i+1]==='"'){ field+='"'; i++; }
+          else quoted=false;
+        }else field+=ch;
+        continue;
+      }
+      if(ch==='"'){
+        // 空フィールド開始時の引用符だけをクォート開始として扱う。
+        if(field==='') quoted=true;
+        else field+=ch;
+      }else if(ch===','){
+        row.push(field); field='';
+      }else if(ch==='\r' || ch==='\n'){
+        if(ch==='\r' && src[i+1]==='\n') i++;
+        row.push(field); field=''; rows.push(row); row=[];
+      }else field+=ch;
+    }
+    if(quoted) throw new Error('CSVの引用符が閉じられていません。');
+    if(field!=='' || row.length){ row.push(field); rows.push(row); }
+    while(rows.length && rows[rows.length-1].every(v=>String(v).trim()==='')) rows.pop();
+    return rows;
+  }
+
+  function csvObjects(text){
+    const rows=parseCsv(text);
+    if(!rows.length) throw new Error('CSVにデータがありません。');
+    const headers=rows[0].map(v=>String(v).trim());
+    if(headers.some((h,i)=>!h || headers.indexOf(h)!==i)) throw new Error('CSVヘッダーに空欄または重複があります。');
+    const data=rows.slice(1).filter(r=>r.some(v=>String(v).trim()!=='')).map((r,rowIndex)=>{
+      const obj={}; headers.forEach((h,i)=>{obj[h]=r[i]??'';});
+      obj.__rowNumber=rowIndex+2;
+      return obj;
+    });
+    return {headers,data};
+  }
+
+  const api={downloadBlob,exportJson,exportCsv,dateStamp,parseCsv,csvObjects};
+  root.AppExport=api;
+  if(typeof module!=='undefined'&&module.exports) module.exports=api;
+})(typeof self!=='undefined'?self:(typeof window!=='undefined'?window:globalThis));
+</script>
+<script data-standalone="js/tutorial.js">(function(root){
+  'use strict';
+  const VERSION=1;
+  const steps=[
+    {title:'Al 配合計算へようこそ',body:'このアプリは、純Al～高純度Alの配合計算、添加確認、歩留まり逆算、希釈計算をオフラインで行うためのPWAです。'},
+    {title:'1. 溶湯量を入力',body:'配合計算では最初に溶湯量と単位を設定します。g / kg / tに対応しています。'},
+    {title:'2. 元素条件を設定',body:'Cu、Si、Tiなど元素ごとに、現在濃度・目標濃度・添加材・歩留まりを入力します。複数元素も同時計算できます。'},
+    {title:'3. 天秤分解能を反映',body:'理論添加量だけでなく、登録した天秤分解能（g / kg）に基づく下側・四捨五入・上側の秤量候補と、そのときの予想最終濃度を確認できます。'},
+    {title:'4. 歩留まりを逆算',body:'実際の添加量と添加前後の分析値から歩留まりを逆算し、実績として保存できます。異常値は自動補正しません。'},
+    {title:'5. データをバックアップ',body:'添加材、天秤、歩留まり実績、計算履歴はブラウザに保存されます。定期的にJSONバックアップを作成してください。'},
+    {title:'準備完了',body:'「サンプル入力」を使うと、Al 1900 kg / Cu 0.1 ppm→0.5 wt% / Cu 99.999 wt% / 歩留まり100% / 1 g天秤の例をすぐ試せます。'}
+  ];
+  let idx=0;
+  function el(id){return document.getElementById(id)}
+  function open(force=false){
+    const seen=localStorage.getItem('tutorialVersionSeen');
+    if(!force && String(VERSION)===seen) return;
+    idx=0; render();
+    el('modalBackdrop').classList.remove('hidden'); el('tutorialModal').classList.remove('hidden');
+  }
+  function close(mark=true){
+    if(mark) localStorage.setItem('tutorialVersionSeen',String(VERSION));
+    el('tutorialModal').classList.add('hidden'); el('modalBackdrop').classList.add('hidden');
+  }
+  function render(){
+    const s=steps[idx]; el('tutorialTitle').textContent=s.title; el('tutorialBody').innerHTML=`<p>${s.body}</p>`;
+    el('tutorialProgress').style.setProperty('--progress',`${((idx+1)/steps.length)*100}%`);
+    el('tutorialPrev').disabled=idx===0; el('tutorialNext').textContent=idx===steps.length-1?'完了':'次へ';
+  }
+  function init(){
+    el('tutorialNext').addEventListener('click',()=>{ if(idx===steps.length-1) close(true); else {idx++;render();}});
+    el('tutorialPrev').addEventListener('click',()=>{if(idx>0){idx--;render();}});
+    el('tutorialSkip').addEventListener('click',()=>close(true));
+  }
+  root.AppTutorial={VERSION,init,open,close};
+})(typeof self!=='undefined'?self:window);
+
+(function(){
+  'use strict';
+  let deferredInstallPrompt=null;
+
+  function isStandalone(){
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone===true;
+  }
+
+  function isIOS(){
+    const ua=window.navigator.userAgent||'';
+    return /iPhone|iPad|iPod/i.test(ua) || (window.navigator.platform==='MacIntel' && window.navigator.maxTouchPoints>1);
+  }
+
+  function showIOSInstallGuide(){
+    window.alert(
+      'iPhone / iPadでは共有メニューからホーム画面に追加します。\n\n' +
+      '1. ブラウザの「共有」ボタン（□↑）をタップ\n' +
+      '2. 「ホーム画面に追加」をタップ\n' +
+      '3. 右上の「追加」をタップ\n\n' +
+      '「ホーム画面に追加」が見つからない場合は、共有メニューを下へスクロールしてください。'
+    );
+  }
+
+  function ensureInstallButton(){
+    let button=document.getElementById('btnInstallApp');
+    if(button)return button;
+    const host=document.querySelector('.top-actions');
+    if(!host)return null;
+
+    button=document.createElement('button');
+    button.id='btnInstallApp';
+    button.type='button';
+    button.className='ghost';
+    button.textContent=isIOS()?'ホーム画面に追加する方法':'アプリとしてインストール';
+    button.setAttribute('aria-label',button.textContent);
+    button.hidden=isStandalone() || !isIOS();
+    button.addEventListener('click',async()=>{
+      if(deferredInstallPrompt){
+        deferredInstallPrompt.prompt();
+        try{
+          await deferredInstallPrompt.userChoice;
+        }finally{
+          deferredInstallPrompt=null;
+          button.hidden=true;
+        }
+        return;
+      }
+      if(isIOS())showIOSInstallGuide();
+    });
+    host.insertBefore(button,host.firstChild);
+    return button;
+  }
+
+  ensureInstallButton();
+
+  window.addEventListener('beforeinstallprompt',event=>{
+    if(isStandalone())return;
+    event.preventDefault();
+    deferredInstallPrompt=event;
+    const button=ensureInstallButton();
+    if(button){
+      button.textContent='アプリとしてインストール';
+      button.setAttribute('aria-label',button.textContent);
+      button.hidden=false;
+    }
+  });
+
+  window.addEventListener('appinstalled',()=>{
+    deferredInstallPrompt=null;
+    const button=document.getElementById('btnInstallApp');
+    if(button)button.hidden=true;
+  });
+})();
+</script>
+<script data-standalone="js/app.js">(function(){
+'use strict';
+const E=window.CalcEngine, D=E.Decimal, S=window.AppStorage, X=window.AppExport;
+const state={additives:[],scales:[],settings:null,lastBlend:null,lastVerify:null,lastYield:null,lastDilution:null,editingScaleId:null,editingAdditiveId:null};
+const $=s=>document.querySelector(s), $=s=>Array.from(document.querySelectorAll(s));
+const byId=id=>document.getElementById(id);
+const HELP={
+  meltMass:'配合開始時点のAl溶湯重量です。g / kg / tから選択できます。',
+  scale:'推奨秤量値の量子化に使用する天秤分解能です。内部の理論値は丸めません。',
+  yield:'添加した目的元素のうち、計算上溶湯中に有効残留した割合です。',
+  additive:'添加材中の目的元素含有率をwt%で指定します。純元素は使用材の分析値・保証値を、Al-5TiならTi 5.000などを入力します。'
+};
+function toast(msg){const t=byId('toast');t.textContent=msg;t.classList.remove('hidden');clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.classList.add('hidden'),2600)}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function today(){return new Date().toISOString().slice(0,10)}
+function selectedYieldMap(){try{return JSON.parse(localStorage.getItem('alBlendSelectedYield')||'{}')}catch{return {}}}
+function setSelectedYield(key,obj){const m=selectedYieldMap();m[key]=obj;localStorage.setItem('alBlendSelectedYield',JSON.stringify(m))}
+function additivePct(additive,element){if(!additive)return'';const c=(additive.components||[]).find(x=>String(x.element).toLowerCase()===String(element).toLowerCase())||(additive.components||[])[0];return c?c.wtPercent:''}
+function availableElements(){const m=new Map();for(const a of state.additives){const el=String(a.mainElement||'').trim();if(el&&!m.has(el.toLowerCase()))m.set(el.toLowerCase(),el)}return [...m.values()].sort((a,b)=>a.localeCompare(b,'ja',{sensitivity:'base'}))}
+function elementOptions(selected='',includeAll=false){
+  const elems=availableElements();
+  if(includeAll){
+    const lead='<option value="">全元素</option>';
+    if(!elems.length)return lead;
+    return lead+elems.map(x=>`<option value="${esc(x)}" ${x===selected?'selected':''}>${esc(x)}</option>`).join('');
+  }
+  if(!elems.length)return '<option value="" selected disabled>添加材マスタに主元素を登録してください</option>';
+  const valid=elems.includes(selected);const lead=`<option value="" disabled ${valid?'':'selected'}>元素を選択</option>`;
+  return lead+elems.map(x=>`<option value="${esc(x)}" ${x===selected?'selected':''}>${esc(x)}</option>`).join('');
+}
+function scaleUnit(scale){return scale&&scale.resolutionUnit==='kg'?'kg':'g'}
+function scaleResolutionValue(scale){if(scale?.resolutionValue)return D.from(scale.resolutionValue);return E.gramToMass(scale?.resolutionG||'0',scaleUnit(scale))}
+function scaleResolutionText(scale){return `${scaleResolutionValue(scale).toString()} ${scaleUnit(scale)}`}
+function getDecimals(){return state.settings.decimals}
+function getSummaryAdditionUnit(){const sel=byId('blendSummaryAdditionUnit');return sel?.value||state.settings.summaryAdditionUnit||'auto'}
+function fmtD(v,dp){return D.from(v).toFixed(dp)}
+function fmtMass(g,mode='addition'){
+  const o=E.gramToDisplayMass(g,'auto'); const dp=mode==='melt'?getDecimals().melt:getDecimals().addition; return `${o.value.toFixed(dp)} ${o.unit}`;
+}
+function decimalPlacesForStep(step){
+  const s=D.from(step).abs().toString();
+  return s.includes('.')?s.split('.')[1].length:0;
+}
+function fmtMassByScale(g,resolutionG,unit='auto'){
+  const o=E.gramToDisplayMass(g,unit);
+  const step=E.gramToMass(resolutionG,o.unit);
+  return `${o.value.toFixed(decimalPlacesForStep(step))} ${o.unit}`;
+}
+function fmtMassInUnit(g,unit,dp=getDecimals().melt){return `${E.gramToMass(g,unit).toFixed(dp)} ${unit}`}
+function calcNum(v,sig=12){
+  const n=Number(D.from(v).toString());
+  if(!Number.isFinite(n))return D.from(v).toString();
+  if(n===0)return '0';
+  const a=Math.abs(n);
+  if(a>=1e9||a<1e-8)return n.toExponential(Math.min(sig-1,10)).replace(/\.0+e/,'e').replace(/(\.\d*?[1-9])0+e/,'$1e');
+  const digits=Math.max(0,Math.min(12,sig-1-Math.floor(Math.log10(a))));
+  return n.toFixed(digits).replace(/\.?0+$/,'');
+}
+function calcMassG(v){return `${calcNum(v,11)} g`}
+function formulaMassInUnit(g,unit){return `${calcNum(E.gramToMass(g,unit),12)} ${unit}`}
+function formulaConc(frac,unit,sig=11){return `${calcNum(E.fractionToConcentration(frac,unit),sig)} ${unit}`}
+function formulaYield(frac){return `${calcNum(D.from(frac).mul(100),9)} %`}
+
+function roundingLabel(mode){return mode==='ceil'?'切り上げ':mode==='floor'?'切り捨て':'四捨五入'}
+function fmtConc(frac,unit){const dp=unit==='ppm'?getDecimals().ppm:unit==='ppb'?getDecimals().ppb:getDecimals().wt;return `${E.fractionToConcentration(frac,unit).toFixed(dp)} ${unit}`}
+function fmtYield(frac){return `${D.from(frac).mul(100).toFixed(getDecimals().yield)} %`}
+function parsePositiveText(el,name){const v=String(el.value).trim();if(!v)throw new Error(`${name}を入力してください。`);return v}
+function setMessage(el,msg,type='muted'){el.className=`message ${type}`;el.textContent=msg}
+function resultError(el,e){el.innerHTML=`<div class="message error">${esc(e.message||e)}</div>`}
+
+async function refreshMasters(){
+  state.additives=(await S.getAll('additives')).filter(x=>x.active!==false).sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+  state.scales=(await S.getAll('scales')).filter(x=>x.active!==false).sort((a,b)=>Number(a.resolutionG)-Number(b.resolutionG));
+  fillElementSelects(); renderScaleSelects(); renderAllAdditiveSelects(); renderMasterTables(); await renderPresetOptions();
+}
+function renderScaleSelects(){
+  const sel=byId('blendScale'); const prev=sel.value; sel.innerHTML=state.scales.map(s=>`<option value="${esc(s.id)}">${esc(s.name)} (${esc(scaleResolutionText(s))})</option>`).join('');
+  if(state.scales.some(s=>s.id===prev))sel.value=prev;
+}
+function additiveOptions(element='',selected=''){
+  const arr=element?state.additives.filter(a=>String(a.mainElement).toLowerCase()===String(element).toLowerCase()):state.additives;
+  return `<option value="">選択</option>`+arr.map(a=>`<option value="${esc(a.id)}" ${a.id===selected?'selected':''}>${esc(a.name)}</option>`).join('');
+}
+function renderAllAdditiveSelects(){
+  ['verifyAdditive','yieldAdditive'].forEach(id=>{const sel=byId(id);const p=sel.value;const elem=byId(id==='verifyAdditive'?'verifyElement':'yieldElement').value;sel.innerHTML=additiveOptions(elem,p);if(state.additives.some(a=>a.id===p))sel.value=p;});
+  $('.element-card').forEach(card=>updateRowAdditives(card));
+}
+function fillElementSelects(){
+  ['verifyElement','yieldElement','yieldFilterElement'].forEach(id=>{const s=byId(id);if(!s)return;const cur=s.value;s.innerHTML=elementOptions(cur,id==='yieldFilterElement');if(cur&&availableElements().includes(cur))s.value=cur;});
+  $('.element-card').forEach(card=>{const sel=card.querySelector('.row-element');const cur=sel.value;sel.innerHTML=elementOptions(cur);if(cur&&availableElements().includes(cur))sel.value=cur;});
+}
+function additiveChanged(sel,pctId,element){const a=state.additives.find(x=>x.id===sel.value);if(a)byId(pctId).value=additivePct(a,element||a.mainElement)}
+
+async function getBlendPresets(){
+  return (await S.getAll('productRecipes')).filter(x=>x.kind==='blendPreset').sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ja'));
+}
+async function renderPresetOptions(){
+  const sel=byId('blendPresetSelect'); if(!sel)return;
+  const cur=sel.value; const rows=await getBlendPresets();
+  sel.innerHTML='<option value="">プリセットを選択</option>'+rows.map(r=>`<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('');
+  if(rows.some(r=>r.id===cur))sel.value=cur;
+}
+function captureBlendPresetData(){
+  const rows=$('.element-card').map(card=>({
+    element:card.querySelector('.row-element').value,
+    currentUnit:card.querySelector('.row-current-unit').value,
+    target:card.querySelector('.row-target').value.trim(),
+    targetUnit:card.querySelector('.row-target-unit').value,
+    additiveId:card.querySelector('.row-additive').value,
+    additivePct:card.querySelector('.row-additive-pct').value.trim(),
+    yield:card.querySelector('.row-yield').value.trim(),
+    yieldSource:card.querySelector('.row-yield-source').value
+  }));
+  if(!rows.length)throw new Error('元素条件がありません。');
+  for(const r of rows){
+    if(!r.element)throw new Error('元素を選択してください。');
+    if(!r.target)throw new Error(`${r.element}: 目標濃度を入力してからプリセット保存してください。`);
+    if(!r.additiveId)throw new Error(`${r.element}: 添加材を選択してください。`);
+    if(!r.additivePct)throw new Error(`${r.element}: 添加材含有率を入力してください。`);
+    if(!r.yield)throw new Error(`${r.element}: 歩留まりを入力してください。`);
+  }
+  return {
+    meltUnit:byId('blendMeltUnit').value,
+    scaleId:byId('blendScale').value,
+    roundingMode:byId('blendRounding').value,
+    rows
+  };
+}
+async function saveBlendPreset(){
+  const name=byId('blendPresetName').value.trim(); if(!name){toast('プリセット名を入力してください。');return;}
+  try{
+    const data=captureBlendPresetData(); const rows=await getBlendPresets();
+    const same=rows.find(r=>String(r.name).toLowerCase()===name.toLowerCase());
+    let id=same?.id||S.uid('preset');
+    if(same&&!confirm(`「${name}」を上書きしますか？`))return;
+    await S.put('productRecipes',{id,kind:'blendPreset',name,data,updatedAt:new Date().toISOString(),createdAt:same?.createdAt||new Date().toISOString()});
+    byId('blendPresetName').value=''; await renderPresetOptions(); byId('blendPresetSelect').value=id; toast('プリセットを保存しました。');
+  }catch(e){toast(e.message||String(e))}
+}
+async function applyBlendPreset(){
+  const id=byId('blendPresetSelect').value;if(!id){toast('プリセットを選択してください。');return;}
+  const preset=await S.get('productRecipes',id);if(!preset||preset.kind!=='blendPreset'){toast('プリセットが見つかりません。');return;}
+  const d=preset.data||{};
+  byId('blendMeltMass').value='';
+  if(d.meltUnit)byId('blendMeltUnit').value=d.meltUnit;
+  if(d.scaleId&&state.scales.some(x=>x.id===d.scaleId))byId('blendScale').value=d.scaleId;
+  if(d.roundingMode)byId('blendRounding').value=d.roundingMode;
+  byId('blendRows').innerHTML='';rowSeq=0;
+  const missingElements=[...new Set((d.rows||[]).map(r=>String(r.element||'').trim()).filter(el=>el&&!availableElements().includes(el)))];
+  (d.rows||[]).forEach(r=>addBlendRow({...r,current:''}));
+  if(!(d.rows||[]).length)addBlendRow({element:availableElements()[0]||''});
+  byId('blendTotalAddition').textContent='—';byId('blendFinalMass').textContent='—';
+  byId('blendElementSummary').innerHTML='';
+  byId('blendDetailPanel').classList.add('hidden');setMessage(byId('blendGlobalMessage'),'溶湯量と現在濃度を入力して計算してください。','muted');
+  if(missingElements.length)toast(`プリセットを読み込みました。マスタにない元素（${missingElements.join(' / ')}）は再選択してください。`);else toast(`プリセット「${preset.name}」を読み込みました。`);
+}
+async function deleteBlendPreset(){
+  const id=byId('blendPresetSelect').value;if(!id){toast('プリセットを選択してください。');return;}
+  const p=await S.get('productRecipes',id);if(!p)return;
+  if(!confirm(`プリセット「${p.name}」を削除しますか？`))return;
+  await S.remove('productRecipes',id);await renderPresetOptions();toast('プリセットを削除しました。');
+}
+
+function showScreen(name){
+  $('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));
+  $('.nav-btn[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
+  state.settings.lastScreen=name;S.saveSettings(state.settings);window.scrollTo({top:0,behavior:'smooth'});
+  if(name==='yield')loadYieldRecords(); if(name==='data'){renderMasterTables();loadHistory();}
+}
+function bindNavigation(){ $('.nav-btn[data-screen]').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen))); }
+
+let rowSeq=0;
+function addBlendRow(preset={}){
+  const id=`row-${++rowSeq}`;const div=document.createElement('div');div.className='element-card';div.dataset.rowId=id;
+  const requestedElement=String(preset.element||'').trim();
+  const selectedElement=availableElements().includes(requestedElement)?requestedElement:(requestedElement?'':(availableElements()[0]||''));
+  div.innerHTML=`
+    <div class="element-header"><div class="element-title"><span class="element-index">${rowSeq}</span><strong>元素条件</strong></div><button class="ghost remove-row" type="button">削除</button></div>
+    <div class="element-grid">
+      <label class="element-select-field">元素<select class="row-element row-element-select" aria-label="元素" required>${elementOptions(selectedElement)}</select></label>
+      <label>現在濃度<div class="input-with-unit"><input class="row-current" inputmode="decimal" value="${esc(preset.current??'')}"/><select class="row-current-unit"><option ${preset.currentUnit==='wt%'?'selected':''}>wt%</option><option ${!preset.currentUnit||preset.currentUnit==='ppm'?'selected':''}>ppm</option><option ${preset.currentUnit==='ppb'?'selected':''}>ppb</option></select></div></label>
+      <label>目標濃度<div class="input-with-unit"><input class="row-target" inputmode="decimal" value="${esc(preset.target??'')}"/><select class="row-target-unit"><option ${preset.targetUnit==='wt%'?'selected':''}>wt%</option><option ${!preset.targetUnit||preset.targetUnit==='ppm'?'selected':''}>ppm</option><option ${preset.targetUnit==='ppb'?'selected':''}>ppb</option></select></div></label>
+      <label class="wide">添加材 <button class="help-dot" data-help="additive">?</button><select class="row-additive"></select></label>
+      <label>含有率 wt%<input class="row-additive-pct" inputmode="decimal" value="${esc(preset.additivePct??'')}"></label>
+      <label>歩留まり % <button class="help-dot" data-help="yield">?</button><input class="row-yield" inputmode="decimal" value="${esc(preset.yield??'100')}"></label>
+      <label class="wide">歩留まり入力元<select class="row-yield-source"><option value="manual">手動</option><option value="record">選択実績</option><option value="stat">実績統計(平均)</option></select></label>
+    </div>
+    <div class="row-result hidden"></div>`;
+  byId('blendRows').appendChild(div);
+  updateRowAdditives(div,preset.additiveId);
+  if(preset.yieldSource)div.querySelector('.row-yield-source').value=preset.yieldSource;
+  div.querySelector('.remove-row').addEventListener('click',()=>{if($('.element-card').length>1)div.remove();else toast('最低1元素は必要です。')});
+  div.querySelector('.row-element').addEventListener('change',()=>{div.querySelector('.row-additive-pct').value='';updateRowAdditives(div)});
+  div.querySelector('.row-additive').addEventListener('change',()=>{
+    const a=state.additives.find(x=>x.id===div.querySelector('.row-additive').value);if(a)div.querySelector('.row-additive-pct').value=additivePct(a,div.querySelector('.row-element').value);
+  });
+  div.querySelector('.row-yield-source').addEventListener('change',()=>resolveYieldForCard(div,true));
+  return div;
+}
+function updateRowAdditives(card,selected){
+  const e=card.querySelector('.row-element').value;const sel=card.querySelector('.row-additive');const prev=selected||sel.value;sel.innerHTML=additiveOptions(e,prev);if(prev&&state.additives.some(a=>a.id===prev))sel.value=prev;
+  const a=state.additives.find(x=>x.id===sel.value);if(a&&!card.querySelector('.row-additive-pct').value)card.querySelector('.row-additive-pct').value=additivePct(a,e);
+}
+async function resolveYieldForCard(card,notify=false){
+  const source=card.querySelector('.row-yield-source').value; if(source==='manual')return card.querySelector('.row-yield').value;
+  const element=card.querySelector('.row-element').value.trim(); const additiveId=card.querySelector('.row-additive').value; const key=`${element}|${additiveId}`;
+  if(source==='record'){
+    const r=selectedYieldMap()[key];if(!r)throw new Error(`${element}: 選択実績がありません。歩留まり画面で「配合に使用」を選んでください。`);
+    card.querySelector('.row-yield').value=D.from(r.yieldFraction).mul(100).toString(); if(notify)toast('選択実績の歩留まりを反映しました。');return card.querySelector('.row-yield').value;
+  }
+  const records=(await S.getAll('yieldRecords')).filter(r=>r.adopted!==false&&r.element===element&&(!additiveId||r.additiveId===additiveId));
+  if(!records.length)throw new Error(`${element}: 統計に利用できる歩留まり実績がありません。`);
+  const avg=records.reduce((s,r)=>s+Number(r.yieldFraction),0)/records.length;card.querySelector('.row-yield').value=String(avg*100);if(notify)toast(`${records.length}件の平均歩留まりを反映しました。`);return card.querySelector('.row-yield').value;
+}
+async function collectBlendRows(){
+  const cards=$('.element-card');const rows=[];
+  for(const card of cards){
+    await resolveYieldForCard(card,false);
+    const element=card.querySelector('.row-element').value.trim();if(!element||!availableElements().includes(element))throw new Error('元素は添加材マスタの主元素からドロップダウンで選択してください。');
+    const current=E.concentrationToFraction(parsePositiveText(card.querySelector('.row-current'),`${element} 現在濃度`),card.querySelector('.row-current-unit').value);
+    const target=E.concentrationToFraction(parsePositiveText(card.querySelector('.row-target'),`${element} 目標濃度`),card.querySelector('.row-target-unit').value);
+    const pct=parsePositiveText(card.querySelector('.row-additive-pct'),`${element} 添加材含有率`);if(D.from(pct).gt(100))throw new Error(`${element}: 添加材含有率は100%以下にしてください。`);
+    const y=parsePositiveText(card.querySelector('.row-yield'),`${element} 歩留まり`);if(D.from(y).lte(0))throw new Error(`${element}: 歩留まりは0%より大きくしてください。`);if(D.from(y).gt(100))toast(`${element}: 歩留まり100%超で計算しています。`);
+    const aid=card.querySelector('.row-additive').value;const ad=state.additives.find(a=>a.id===aid);
+    rows.push({element,currentFraction:current,targetFraction:target,additiveFraction:E.percentToFraction(pct),yieldFraction:E.percentToFraction(y),additiveId:aid,additiveName:ad?.name||'手入力',yieldSource:card.querySelector('.row-yield-source').value,currentUnit:card.querySelector('.row-current-unit').value,targetUnit:card.querySelector('.row-target-unit').value,card});
+  }
+  return rows;
+}
+function clearBlendElementSummary(){
+  const grid=byId('blendSummaryGrid');
+  if(!grid)return;
+  grid.querySelectorAll('.summary-element-item').forEach(node=>node.remove());
+}
+function renderBlendElementSummary(rows,preferred,res,scale,displayUnit=getSummaryAdditionUnit()){
+  const grid=byId('blendSummaryGrid');
+  if(!grid)return;
+  clearBlendElementSummary();
+  const list=Array.isArray(rows)?rows:[];
+  const masses=Array.isArray(preferred)?preferred:[];
+  if(list.length<2)return;
+  list.forEach((r,i)=>{
+    const card=document.createElement('div');
+    card.className='summary-element-item';
+    const label=document.createElement('span');
+    label.textContent=`${String(r?.element||`元素${i+1}`)} 添加量`;
+    const value=document.createElement('strong');
+    value.textContent=masses[i]==null?'—':fmtMassByScale(masses[i],res,displayUnit);
+    card.append(label,value);
+    grid.appendChild(card);
+  });
+}
+function refreshBlendSummaryDisplay(){
+  const r=state.lastBlend;if(!r)return;
+  const res=D.from(r.scale.resolutionG);
+  const displayUnit=getSummaryAdditionUnit();
+  byId('blendTotalAddition').textContent=fmtMassByScale(r.totalPreferred,res,displayUnit);
+  byId('blendFinalMass').textContent=fmtMassByScale(r.finalMass,res,byId('blendMeltUnit').value);
+  renderBlendElementSummary(r.rows,r.preferred,res,r.scale,displayUnit);
+}
+async function calcBlend(){
+  const msg=byId('blendGlobalMessage');
+  try{
+    const M=E.massToGram(parsePositiveText(byId('blendMeltMass'),'溶湯量'),byId('blendMeltUnit').value);if(M.lte(0))throw new Error('溶湯量は0より大きくしてください。');
+    const rows=await collectBlendRows();const batch=E.calculateMultiElementBatch({meltMassG:M,rows});
+    const scale=state.scales.find(s=>s.id===byId('blendScale').value);if(!scale)throw new Error('天秤を設定してください。');const res=D.from(scale.resolutionG);const mode=byId('blendRounding').value;
+    const preferred=batch.rows.map(r=>r.theoreticalMassG.quantize(res,mode));
+    const recommendedFinal=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:preferred});
+    const totalPreferred=preferred.reduce((s,x)=>s.add(x),D.zero());const finalMass=M.add(totalPreferred);
+    byId('blendTotalAddition').textContent=fmtMassByScale(totalPreferred,res,getSummaryAdditionUnit());
+    byId('blendFinalMass').textContent=fmtMassByScale(finalMass,res,byId('blendMeltUnit').value);
+    renderBlendElementSummary(rows,preferred,res,scale,getSummaryAdditionUnit());
+    batch.rows.forEach((r,i)=>{
+      const card=r.card;const unit=r.targetUnit;const candidates=[['下側',r.theoreticalMassG.quantize(res,'floor')],['四捨五入',r.theoreticalMassG.quantize(res,'half-up')],['上側',r.theoreticalMassG.quantize(res,'ceil')]];
+      const unique=[];const seen=new Set();for(const [name,mass] of candidates){if(seen.has(mass.toString()))continue;seen.add(mass.toString());const ms=preferred.slice();ms[i]=mass;const fin=E.finalConcentrationsForBatch({meltMassG:M,rows:batch.rows,additionMassesG:ms})[i];unique.push({name,mass,fin});}
+      const out=card.querySelector('.row-result');out.classList.remove('hidden');out.innerHTML=`
+        <div><span>理論必要添加量</span><strong>${fmtMass(r.theoreticalMassG)}</strong></div>
+        <div><span>推奨秤量値</span><strong>${fmtMassByScale(preferred[i],res,scaleUnit(scale))}</strong></div>
+        <div><span>推奨時の予想濃度</span><strong>${fmtConc(recommendedFinal[i],unit)}</strong></div>
+        <div><span>目標との差</span><strong>${fmtConc(recommendedFinal[i].sub(r.Ct),unit)}</strong></div>
+        <div class="scenario-list" style="grid-column:1/-1"><strong>秤量候補</strong>${unique.map(u=>`<div class="${u.mass.eq(preferred[i])?'preferred':''}"><span>${u.name}: ${fmtMassByScale(u.mass,res,scaleUnit(scale))}</span><span>${fmtConc(u.fin,unit)}</span></div>`).join('')}</div>`;
+    });
+    state.lastBlend={M,rows:batch.rows,preferred,recommendedFinal,totalPreferred,finalMass,theoreticalTotalAddition:batch.totalAdditionG,scale,mode,at:new Date().toISOString()};
+    byId('saveBlendHistory').disabled=true;
+    setMessage(msg,'計算完了','success');
+    renderBlendDetail();
+    try{
+      await saveBlendHistory(true);
+    }catch(historyError){
+      console.error('計算履歴の自動保存に失敗しました。',historyError);
+      toast('計算は完了しましたが、履歴の自動保存に失敗しました。');
+    }
+  }catch(e){
+    state.lastBlend=null;byId('saveBlendHistory').disabled=true;
+    clearBlendElementSummary();
+    setMessage(msg,e.message,'error');
+  }
+}
+function renderBlendDetail(){
+  const r=state.lastBlend;if(!r)return;
+  const p=byId('blendDetailPanel');p.classList.remove('hidden');
+  const disclosure=byId('blendDetailDisclosure');if(disclosure)disclosure.open=false;
+  const res=D.from(r.scale.resolutionG);const roundedTotal=r.totalPreferred;
+  const meltUnit=byId('blendMeltUnit').value;
+  const multiSymbols=r.rows.length>1?`
+      <div><strong>S</strong><span>全元素の総添加量（Σx）</span></div>
+      <div><strong>aᵢ</strong><span>元素 i の濃度差から求める中間質量項</span></div>
+      <div><strong>bᵢ</strong><span>元素 i の総重量増加補正係数</span></div>
+      <div><strong>Σ</strong><span>全元素について合計する記号</span></div>
+      <div><strong>i, j</strong><span>各元素を区別する添字</span></div>`:'';
+  const symbols=`
+    <div class="formula-symbol-grid">
+      <div><strong>M</strong><span>添加前の溶湯質量</span></div>
+      <div><strong>C₀</strong><span>添加前の目的元素濃度</span></div>
+      <div><strong>Cₜ</strong><span>目標濃度</span></div>
+      <div><strong>P</strong><span>添加材中の目的元素質量分率</span></div>
+      <div><strong>Y</strong><span>添加歩留まり（1 = 100%）</span></div>
+      <div><strong>x</strong><span>必要な添加材質量</span></div>
+      <div><strong>C₁</strong><span>推奨秤量後の予想濃度</span></div>
+      ${multiSymbols}
+    </div>`;
+
+  let body='';
+  if(r.rows.length===1){
+    const x=r.rows[0], rounded=r.preferred[0], fin=r.recommendedFinal[0], unit=x.targetUnit;
+    const c0=calcNum(x.C0,10), ct=calcNum(x.Ct,10), pp=calcNum(x.P,10), yy=calcNum(x.Y,10);
+    const theoretical=calcNum(x.theoreticalMassG,12), roundedStr=calcNum(rounded,12), finFrac=calcNum(fin,10);
+    body=`
+      <div class="formula-step"><div class="formula-step-title"><span>1</span>入力値を質量分率へ変換</div>
+        <div class="formula-input-grid">
+          <div><span>溶湯量 M</span><strong>${esc(formulaMassInUnit(r.M,meltUnit))}</strong><small>= ${esc(calcMassG(r.M))}</small></div>
+          <div><span>現在濃度 C₀</span><strong>${esc(formulaConc(x.C0,x.currentUnit))}</strong><small>= ${esc(c0)}（質量分率）</small></div>
+          <div><span>目標濃度 Cₜ</span><strong>${esc(formulaConc(x.Ct,x.targetUnit))}</strong><small>= ${esc(ct)}（質量分率）</small></div>
+          <div><span>添加材含有率 P</span><strong>${esc(calcNum(D.from(x.P).mul(100),9))} wt%</strong><small>= ${esc(pp)}</small></div>
+          <div><span>歩留まり Y</span><strong>${esc(formulaYield(x.Y))}</strong><small>= ${esc(yy)}</small></div>
+        </div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>2</span>理論必要添加量を計算</div>
+        <div class="formula-math"><div class="formula-line formula-main">x = M × (Cₜ − C₀) ÷ (P × Y − Cₜ)</div>
+        <div class="formula-line">= ${esc(calcNum(r.M,12))} × (${esc(ct)} − ${esc(c0)}) ÷ (${esc(pp)} × ${esc(yy)} − ${esc(ct)})</div>
+        <div class="formula-answer">= ${esc(theoretical)} g</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>3</span>天秤分解能で${esc(roundingLabel(r.mode))}</div>
+        <div class="formula-math"><div class="formula-line">理論値 ${esc(theoretical)} g → ${esc(scaleResolutionText(r.scale))} 単位で${esc(roundingLabel(r.mode))}</div>
+        <div class="formula-answer">推奨秤量値 = ${esc(fmtMassByScale(rounded,res,scaleUnit(r.scale)))}</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>4</span>推奨秤量値から最終濃度を再計算</div>
+        <div class="formula-math"><div class="formula-line formula-main">C₁ = (M × C₀ + x × P × Y) ÷ (M + x)</div>
+        <div class="formula-line">= (${esc(calcNum(r.M,12))} × ${esc(c0)} + ${esc(roundedStr)} × ${esc(pp)} × ${esc(yy)}) ÷ (${esc(calcNum(r.M,12))} + ${esc(roundedStr)})</div>
+        <div class="formula-answer">= ${esc(formulaConc(fin,unit,12))}</div></div>
+        <div class="formula-final-grid"><div><span>添加後総重量</span><strong>${esc(fmtMassByScale(r.finalMass,res,meltUnit))}</strong></div><div><span>内部質量分率 C₁</span><strong>${esc(finFrac)}</strong></div></div>
+      </div>`;
+  }else{
+    const sumA=r.rows.reduce((sum,x)=>sum.add(x.a),D.zero());
+    const sumB=r.rows.reduce((sum,x)=>sum.add(x.b),D.zero());
+    const rowSteps=r.rows.map((x,i)=>{
+      const rounded=r.preferred[i], fin=r.recommendedFinal[i];
+      return `<div class="formula-multi-row"><h4>${esc(x.element)}</h4>
+        <div><span>aᵢ</span><strong>${esc(calcNum(x.a,11))} g</strong></div>
+        <div><span>bᵢ</span><strong>${esc(calcNum(x.b,11))}</strong></div>
+        <div><span>理論 xᵢ</span><strong>${esc(calcNum(x.theoreticalMassG,11))} g</strong></div>
+        <div><span>推奨秤量</span><strong>${esc(fmtMassByScale(rounded,res,scaleUnit(r.scale)))}</strong></div>
+        <div><span>予想濃度 C₁</span><strong>${esc(fmtConc(fin,x.targetUnit))}</strong></div>
+      </div>`;
+    }).join('');
+    body=`
+      <div class="formula-step"><div class="formula-step-title"><span>1</span>複数元素の共通総重量を考慮</div>
+        <p class="formula-note formula-note-top">複数元素では、各添加材が最終総重量を増やすため、元素ごとに完全独立では計算せず、総添加量 S を共通項として連立します。</p>
+        <div class="formula-math"><div class="formula-line formula-main">Cₜᵢ = (M·C₀ᵢ + xᵢ·Pᵢ·Yᵢ) ÷ (M + Σxⱼ)</div>
+        <div class="formula-line">aᵢ = M·(Cₜᵢ − C₀ᵢ) ÷ (Pᵢ·Yᵢ)</div>
+        <div class="formula-line">bᵢ = Cₜᵢ ÷ (Pᵢ·Yᵢ)</div>
+        <div class="formula-line">S = Σaᵢ ÷ (1 − Σbᵢ)</div>
+        <div class="formula-line">xᵢ = aᵢ + bᵢ·S</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>2</span>共通総添加量 S を算出</div>
+        <div class="formula-math"><div class="formula-line">Σa = ${esc(calcNum(sumA,12))} g</div><div class="formula-line">Σb = ${esc(calcNum(sumB,12))}</div><div class="formula-answer">S = ${esc(calcNum(r.theoreticalTotalAddition,12))} g</div></div>
+      </div>
+      <div class="formula-step"><div class="formula-step-title"><span>3</span>元素ごとの添加量と推奨秤量値</div><div class="formula-multi-grid">${rowSteps}</div></div>
+      <div class="formula-step"><div class="formula-step-title"><span>4</span>推奨秤量後の総重量</div><div class="formula-final-grid"><div><span>総添加量</span><strong>${esc(fmtMassByScale(roundedTotal,res,scaleUnit(r.scale)))}</strong></div><div><span>添加後総重量</span><strong>${esc(fmtMassByScale(r.finalMass,res,meltUnit))}</strong></div></div></div>`;
+  }
+  byId('blendDetail').innerHTML=`<div class="formula-intro"><strong>標準モデルA</strong><span>添加材全量を最終総重量へ加算し、目的元素として有効になる量だけに歩留まりを反映します。</span></div><div class="formula-legend"><h3>記号の意味</h3>${symbols}</div>${body}<div class="formula-note">※ 濃度は内部では質量分率に変換して計算し、中間値は丸めません。表示と秤量値だけを指定条件に従って丸めています。</div>`;
+}
+async function persistCalculationHistory(record){
+  await S.put('calculationHistory',record);
+  await loadHistory();
+  return record;
+}
+function buildBlendHistoryRecord(r){
+  return {
+    id:S.uid('calc'),
+    date:new Date().toISOString(),
+    type:'配合計算',
+    summary:r.rows.map((x,i)=>`${x.element} ${fmtMassByScale(r.preferred[i],r.scale.resolutionG,scaleUnit(r.scale))}`).join(' / '),
+    payload:{
+      meltMassG:r.M.toString(),
+      meltUnit:byId('blendMeltUnit').value,
+      scaleId:r.scale.id,
+      roundingMode:r.mode,
+      totalAdditionMassG:r.totalPreferred.toString(),
+      finalMassG:r.finalMass.toString(),
+      rows:r.rows.map((x,i)=>({
+        element:x.element,
+        currentFraction:x.C0.toString(),
+        targetFraction:x.Ct.toString(),
+        currentUnit:x.currentUnit,
+        targetUnit:x.targetUnit,
+        additiveId:x.additiveId,
+        additiveName:x.additiveName,
+        yieldFraction:x.Y.toString(),
+        theoreticalMassG:x.theoreticalMassG.toString(),
+        recommendedMassG:r.preferred[i].toString(),
+        finalFraction:r.recommendedFinal[i].toString()
+      }))
+    }
+  };
+}
+async function saveBlendHistory(silent=false){
+  if(!state.lastBlend)return null;
+  const record=buildBlendHistoryRecord(state.lastBlend);
+  await persistCalculationHistory(record);
+  state.lastBlend.historyId=record.id;
+  if(!silent)toast('配合計算を履歴に保存しました。');
+  return record;
+}
+function loadBlendSample(){byId('blendMeltMass').value='1900';byId('blendMeltUnit').value='kg';if(state.scales.some(s=>s.id==='scale-100'))byId('blendScale').value='scale-100';byId('blendRounding').value='half-up';byId('blendRows').innerHTML='';rowSeq=0;addBlendRow({element:'Cu',current:'0.1',target:'0.5',currentUnit:'ppm',targetUnit:'wt%',additiveId:'add-5n-cu',additivePct:'99.999',yield:'100'});toast('サンプル値を入力しました。')}
+
+function bindVerify(){
+  byId('verifyElement').addEventListener('change',()=>{const s=byId('verifyAdditive');s.innerHTML=additiveOptions(byId('verifyElement').value);if(s.options.length>1){s.selectedIndex=1;additiveChanged(s,'verifyAdditivePct',byId('verifyElement').value)}});
+  byId('verifyAdditive').addEventListener('change',()=>additiveChanged(byId('verifyAdditive'),'verifyAdditivePct',byId('verifyElement').value));
+  byId('calcVerify').addEventListener('click',async()=>{try{
+    const M=E.massToGram(parsePositiveText(byId('verifyMeltMass'),'溶湯量'),byId('verifyMeltUnit').value);
+    const C0=E.concentrationToFraction(parsePositiveText(byId('verifyCurrent'),'現在濃度'),byId('verifyCurrentUnit').value);
+    const x=E.massToGram(parsePositiveText(byId('verifyAddition'),'実添加量'),byId('verifyAdditionUnit').value);
+    const P=E.percentToFraction(parsePositiveText(byId('verifyAdditivePct'),'添加材含有率'));
+    const Y=E.percentToFraction(parsePositiveText(byId('verifyYield'),'歩留まり'));
+    const C1=E.calculateFinalConcentration({meltMassG:M,currentFraction:C0,additionMassG:x,additiveFraction:P,yieldFraction:Y});
+    const unit=byId('verifyOutputUnit').value;let diff='—';let target=null;
+    if(byId('verifyTarget').value.trim()){target=E.concentrationToFraction(byId('verifyTarget').value,byId('verifyTargetUnit').value);diff=fmtConc(C1.sub(target),unit)}
+    byId('verifyResult').innerHTML=`<div class="result-card"><h3>添加確認結果</h3><div class="result-values"><div><span>推定最終濃度</span><strong>${fmtConc(C1,unit)}</strong></div><div><span>濃度増加量</span><strong>${fmtConc(C1.sub(C0),unit)}</strong></div><div><span>添加後総重量</span><strong>${fmtMassInUnit(M.add(x),byId('verifyMeltUnit').value,getDecimals().melt)}</strong></div>${target?`<div><span>目標との差</span><strong>${diff}</strong></div>`:''}</div></div>`;
+    state.lastVerify={M,C0,x,P,Y,C1,target,unit};byId('saveVerifyHistory').disabled=true;
+    const element=byId('verifyElement').value,aid=byId('verifyAdditive').value,ad=state.additives.find(a=>a.id===aid);
+    await persistCalculationHistory({id:S.uid('calc'),date:new Date().toISOString(),type:'添加確認',summary:`${element}: ${fmtConc(C1,unit)}`,payload:{element,meltMassG:M.toString(),meltUnit:byId('verifyMeltUnit').value,currentFraction:C0.toString(),additionMassG:x.toString(),additiveId:aid,additiveName:ad?.name||'',additiveFraction:P.toString(),yieldFraction:Y.toString(),finalFraction:C1.toString(),targetFraction:target?.toString()||null,outputUnit:unit}});
+  }catch(e){state.lastVerify=null;byId('saveVerifyHistory').disabled=true;resultError(byId('verifyResult'),e)}
+  });
+}
+
+function bindYield(){
+  byId('yieldDate').value=today();
+  byId('yieldElement').addEventListener('change',()=>{const s=byId('yieldAdditive');s.innerHTML=additiveOptions(byId('yieldElement').value);if(s.options.length>1){s.selectedIndex=1;additiveChanged(s,'yieldAdditivePct',byId('yieldElement').value)}});
+  byId('yieldAdditive').addEventListener('change',()=>additiveChanged(byId('yieldAdditive'),'yieldAdditivePct',byId('yieldElement').value));
+  byId('calcYield').addEventListener('click',async()=>{try{
+    const M=E.massToGram(parsePositiveText(byId('yieldMeltMass'),'添加前溶湯量'),byId('yieldMeltUnit').value);
+    const C0=E.concentrationToFraction(parsePositiveText(byId('yieldBefore'),'添加前分析値'),byId('yieldBeforeUnit').value);
+    const C1=E.concentrationToFraction(parsePositiveText(byId('yieldAfter'),'添加後分析値'),byId('yieldAfterUnit').value);
+    const x=E.massToGram(parsePositiveText(byId('yieldAddition'),'実添加量'),byId('yieldAdditionUnit').value);
+    const P=E.percentToFraction(parsePositiveText(byId('yieldAdditivePct'),'添加材含有率'));
+    const Y=E.calculateYield({meltMassG:M,currentFraction:C0,finalFraction:C1,additionMassG:x,additiveFraction:P});
+    let cls='success',note='通常範囲内です。';if(Y.lt(0)){cls='warning';note='0%未満です。入力値や分析値、サンプリングばらつきを確認してください。'}else if(Y.gt(1)){cls='warning';note='100%超です。入力値や分析値、サンプリングばらつきを確認してください。'}
+    byId('yieldResult').innerHTML=`<div class="result-card"><h3>逆算結果: ${fmtYield(Y)}</h3><div class="message ${cls}">${note} 値は自動補正していません。</div></div>`;
+    state.lastYield={M,C0,C1,x,P,Y};byId('saveYieldRecord').disabled=false;
+    const element=byId('yieldElement').value,aid=byId('yieldAdditive').value,ad=state.additives.find(a=>a.id===aid);
+    await persistCalculationHistory({id:S.uid('calc'),date:new Date().toISOString(),type:'歩留まり逆算',summary:`${element}: ${fmtYield(Y)}`,payload:{element,meltMassG:M.toString(),meltUnit:byId('yieldMeltUnit').value,beforeFraction:C0.toString(),afterFraction:C1.toString(),additionMassG:x.toString(),additiveId:aid,additiveName:ad?.name||'',additiveFraction:P.toString(),yieldFraction:Y.toString()}});
+  }catch(e){state.lastYield=null;byId('saveYieldRecord').disabled=true;resultError(byId('yieldResult'),e)}
+  });
+  byId('saveYieldRecord').addEventListener('click',async()=>{const r=state.lastYield;if(!r)return;const aid=byId('yieldAdditive').value;const ad=state.additives.find(a=>a.id===aid);await S.put('yieldRecords',{id:S.uid('yield'),date:byId('yieldDate').value||today(),createdAt:new Date().toISOString(),element:byId('yieldElement').value,additiveId:aid,additiveName:ad?.name||'手入力',meltMassG:r.M.toString(),beforeFraction:r.C0.toString(),afterFraction:r.C1.toString(),additionMassG:r.x.toString(),additiveFraction:r.P.toString(),yieldFraction:r.Y.toString(),adopted:r.Y.gte(0)&&r.Y.lte(1),memo:byId('yieldMemo').value});toast('歩留まり実績を保存しました。');loadYieldRecords()});
+  byId('refreshYieldRecords').addEventListener('click',loadYieldRecords);byId('yieldFilterElement').addEventListener('change',loadYieldRecords);
+}
+async function loadYieldRecords(){
+  let rows=await S.getAll('yieldRecords');const f=byId('yieldFilterElement').value;if(f)rows=rows.filter(r=>r.element===f);rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const adopted=rows.filter(r=>r.adopted!==false).map(r=>Number(r.yieldFraction)*100).filter(Number.isFinite);const stats=calcStats(adopted);byId('yieldStats').innerHTML=[['件数',stats.n],['平均',stats.n?stats.avg.toFixed(getDecimals().yield)+' %':'—'],['中央値',stats.n?stats.median.toFixed(getDecimals().yield)+' %':'—'],['最小',stats.n?stats.min.toFixed(getDecimals().yield)+' %':'—'],['最大',stats.n?stats.max.toFixed(getDecimals().yield)+' %':'—'],['標準偏差',stats.n?stats.sd.toFixed(getDecimals().yield)+' %':'—']].map(x=>`<div class="stat"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
+  byId('yieldRecordRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.element)}</td><td>${esc(r.additiveName||'')}</td><td>${fmtYield(r.yieldFraction)}</td><td><input class="adopt-yield" data-id="${esc(r.id)}" type="checkbox" ${r.adopted!==false?'checked':''}></td><td>${esc(r.memo||'')}</td><td><button class="secondary use-yield" data-id="${esc(r.id)}">配合に使用</button> <button class="ghost delete-yield" data-id="${esc(r.id)}">削除</button></td></tr>`).join(''):`<tr><td colspan="7" class="muted">実績はありません。</td></tr>`;
+  $('.adopt-yield').forEach(c=>c.addEventListener('change',async()=>{const r=await S.get('yieldRecords',c.dataset.id);r.adopted=c.checked;await S.put('yieldRecords',r);loadYieldRecords()}));
+  $('.delete-yield').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この実績を削除しますか？')){await S.remove('yieldRecords',b.dataset.id);loadYieldRecords()}}));
+  $('.use-yield').forEach(b=>b.addEventListener('click',async()=>{const r=await S.get('yieldRecords',b.dataset.id);if(!availableElements().includes(r.element)){toast(`元素「${r.element}」は現在の添加材マスタにありません。主元素を登録してから使用してください。`);return;}setSelectedYield(`${r.element}|${r.additiveId}`,r);showScreen('blend');let card=$('.element-card').find(c=>c.querySelector('.row-element').value===r.element);if(!card)card=addBlendRow({element:r.element,additiveId:r.additiveId});card.querySelector('.row-element').value=r.element;updateRowAdditives(card,r.additiveId);card.querySelector('.row-yield-source').value='record';card.querySelector('.row-yield').value=D.from(r.yieldFraction).mul(100).toString();toast('選択した歩留まり実績を配合計算へ反映しました。')}));
+}
+function calcStats(a){if(!a.length)return{n:0,avg:0,median:0,min:0,max:0,sd:0};const s=[...a].sort((x,y)=>x-y);const n=s.length,avg=s.reduce((x,y)=>x+y,0)/n,median=n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2,sd=Math.sqrt(s.reduce((x,y)=>x+(y-avg)**2,0)/n);return{n,avg,median,min:s[0],max:s[n-1],sd}}
+
+function bindDilution(){
+  byId('calcDilution').addEventListener('click',async()=>{try{
+    const M=E.massToGram(parsePositiveText(byId('dilMeltMass'),'現在溶湯量'),byId('dilMeltUnit').value);
+    const C0=E.concentrationToFraction(parsePositiveText(byId('dilCurrent'),'現在濃度'),byId('dilCurrentUnit').value);
+    const Ct=E.concentrationToFraction(parsePositiveText(byId('dilTarget'),'目標濃度'),byId('dilTargetUnit').value);
+    const Cd=E.concentrationToFraction(parsePositiveText(byId('dilDiluent'),'希釈材濃度'),byId('dilDiluentUnit').value);
+    const x=E.calculateDilutionMass({meltMassG:M,currentFraction:C0,targetFraction:Ct,diluentFraction:Cd});
+    const final=(M.mul(C0).add(x.mul(Cd))).div(M.add(x),48);
+    byId('dilutionResult').innerHTML=`<div class="result-card"><h3>希釈計算結果</h3><div class="result-values"><div><span>必要希釈材量</span><strong>${fmtMass(x)}</strong></div><div><span>希釈後総重量</span><strong>${fmtMassInUnit(M.add(x),byId('dilMeltUnit').value,getDecimals().melt)}</strong></div><div><span>希釈後濃度</span><strong>${fmtConc(final,byId('dilTargetUnit').value)}</strong></div></div></div>`;
+    state.lastDilution={M,C0,Ct,Cd,x,final};byId('saveDilutionHistory').disabled=true;
+    await persistCalculationHistory({id:S.uid('calc'),date:new Date().toISOString(),type:'希釈計算',summary:`希釈材 ${fmtMass(x)}`,payload:{meltMassG:M.toString(),meltUnit:byId('dilMeltUnit').value,currentFraction:C0.toString(),targetFraction:Ct.toString(),diluentFraction:Cd.toString(),dilutionMassG:x.toString(),finalFraction:final.toString()}});
+  }catch(e){state.lastDilution=null;byId('saveDilutionHistory').disabled=true;resultError(byId('dilutionResult'),e)}
+  });
+}
+
+function requireCsvHeaders(parsed,required,label){
+  const missing=required.filter(h=>!parsed.headers.includes(h));
+  if(missing.length)throw new Error(`${label}CSVに必要な列がありません: ${missing.join('、')}`);
+}
+function parseCsvActive(value,rowNumber){
+  const v=String(value??'').trim().toLowerCase();
+  if(v===''||v==='有効'||v==='true'||v==='1'||v==='yes'||v==='y')return true;
+  if(v==='無効'||v==='false'||v==='0'||v==='no'||v==='n')return false;
+  throw new Error(`${rowNumber}行目: 有効列は「有効」または「無効」で指定してください。`);
+}
+function parseScaleMasterCsv(text){
+  const parsed=X.csvObjects(text);requireCsvHeaders(parsed,['ID','名称','分解能','単位','有効'],'天秤マスタ');
+  if(!parsed.data.length)throw new Error('天秤マスタCSVにデータ行がありません。');
+  const seen=new Set();
+  return parsed.data.map(r=>{
+    const n=r.__rowNumber;const name=String(r['名称']??'').trim();const rawId=String(r['ID']??'').trim();const id=rawId||S.uid('scale');
+    if(seen.has(id))throw new Error(`${n}行目: ID「${id}」がCSV内で重複しています。`);seen.add(id);
+    if(!name)throw new Error(`${n}行目: 名称が空欄です。`);
+    const unit=String(r['単位']??'').trim().toLowerCase();if(unit!=='g'&&unit!=='kg')throw new Error(`${n}行目: 単位は g または kg を指定してください。`);
+    const resolution=String(r['分解能']??'').trim();if(!resolution)throw new Error(`${n}行目: 分解能が空欄です。`);
+    let resolutionG;try{if(D.from(resolution).lte(0))throw new Error();resolutionG=E.massToGram(resolution,unit);}catch(_){throw new Error(`${n}行目: 分解能は0より大きい数値で指定してください。`);}
+    return {id,name,resolutionValue:D.from(resolution).toString(),resolutionUnit:unit,resolutionG:resolutionG.toString(),active:parseCsvActive(r['有効'],n)};
+  });
+}
+function parseAdditiveMasterCsv(text){
+  const parsed=X.csvObjects(text);requireCsvHeaders(parsed,['ID','名称','分類','主元素','含有率_wt%','備考','有効'],'添加材マスタ');
+  if(!parsed.data.length)throw new Error('添加材マスタCSVにデータ行がありません。');
+  const seen=new Set();
+  return parsed.data.map(r=>{
+    const n=r.__rowNumber;const name=String(r['名称']??'').trim();const element=String(r['主元素']??'').trim();const rawId=String(r['ID']??'').trim();const id=rawId||S.uid('add');
+    if(seen.has(id))throw new Error(`${n}行目: ID「${id}」がCSV内で重複しています。`);seen.add(id);
+    if(!name)throw new Error(`${n}行目: 名称が空欄です。`);if(!element)throw new Error(`${n}行目: 主元素が空欄です。`);
+    const cls=String(r['分類']??'').trim().toLowerCase();let type;if(cls==='純元素'||cls==='pure')type='pure';else if(cls==='母合金'||cls==='master')type='master';else throw new Error(`${n}行目: 分類は「純元素」または「母合金」を指定してください。`);
+    const pct=String(r['含有率_wt%']??'').trim();try{if(D.from(pct).lte(0)||D.from(pct).gt(100))throw new Error();}catch(_){throw new Error(`${n}行目: 含有率_wt%は0より大きく100以下の数値で指定してください。`);}
+    return {id,name,type,mainElement:element,components:[{element,wtPercent:D.from(pct).toString()}],purity:type==='pure'?D.from(pct).toString():'',maker:'',partNo:'',note:String(r['備考']??'').trim(),active:parseCsvActive(r['有効'],n)};
+  });
+}
+async function restoreScaleMasterCsv(file){
+  const rows=parseScaleMasterCsv(await file.text());
+  if(!confirm(`天秤マスタをCSVから${rows.length}件復元します。\n同じIDは上書き、未登録IDは追加されます。CSVにない既存データは残ります。\n続行しますか？`))return false;
+  await S.putMany('scales',rows);resetScaleForm();await refreshMasters();toast(`天秤マスタを${rows.length}件復元しました。`);return true;
+}
+async function restoreAdditiveMasterCsv(file){
+  const rows=parseAdditiveMasterCsv(await file.text());
+  if(!confirm(`添加材マスタをCSVから${rows.length}件復元します。\n同じIDは上書き、未登録IDは追加されます。CSVにない既存データは残ります。\n続行しますか？`))return false;
+  await S.putMany('additives',rows);resetAdditiveForm();await refreshMasters();toast(`添加材マスタを${rows.length}件復元しました。`);return true;
+}
+
+function historyRecordSignature(row){
+  return [String(row?.date||''),String(row?.type||''),String(row?.summary||''),JSON.stringify(row?.payload||{})].join('\u001f');
+}
+function parseCalculationHistoryCsv(text){
+  const parsed=X.csvObjects(text);requireCsvHeaders(parsed,['日時','種類','概要','データJSON'],'計算履歴');
+  if(!parsed.data.length)throw new Error('計算履歴CSVにデータ行がありません。');
+  return parsed.data.map(r=>{
+    const n=r.__rowNumber;
+    const rawDate=String(r['日時']??'').trim();
+    const type=String(r['種類']??'').trim();
+    const summary=String(r['概要']??'');
+    if(!rawDate)throw new Error(`${n}行目: 日時が空欄です。`);
+    const timestamp=Date.parse(rawDate);
+    if(!Number.isFinite(timestamp))throw new Error(`${n}行目: 日時「${rawDate}」を認識できません。`);
+    if(!type)throw new Error(`${n}行目: 種類が空欄です。`);
+    const rawPayload=String(r['データJSON']??'').trim();
+    let payload={};
+    if(rawPayload){
+      try{payload=JSON.parse(rawPayload);}catch(_){throw new Error(`${n}行目: データJSONが正しいJSON形式ではありません。`);}
+    }
+    if(payload===null||typeof payload!=='object'||Array.isArray(payload))throw new Error(`${n}行目: データJSONはJSONオブジェクトで指定してください。`);
+    return {id:S.uid('calc'),date:new Date(timestamp).toISOString(),type,summary,payload};
+  });
+}
+async function restoreCalculationHistoryCsv(file){
+  const rows=parseCalculationHistoryCsv(await file.text());
+  const existing=await S.getAll('calculationHistory');
+  const signatures=new Set(existing.map(historyRecordSignature));
+  const additions=[];let duplicateCount=0;
+  for(const row of rows){
+    const sig=historyRecordSignature(row);
+    if(signatures.has(sig)){duplicateCount++;continue;}
+    signatures.add(sig);additions.push(row);
+  }
+  const duplicateNote=duplicateCount?`\n重複 ${duplicateCount}件はスキップします。`:'';
+  if(!confirm(`計算履歴CSVを読み込みます。\n追加 ${additions.length}件${duplicateNote}\n続行しますか？`))return false;
+  if(additions.length)await S.putMany('calculationHistory',additions);
+  await loadHistory();
+  toast(additions.length?`計算履歴を${additions.length}件復元しました。${duplicateCount?` 重複${duplicateCount}件をスキップしました。`:''}`:`復元対象はありませんでした。重複${duplicateCount}件をスキップしました。`);
+  return true;
+}
+
+function resetScaleForm(){
+  state.editingScaleId=null;byId('scaleForm').reset();byId('scaleResolutionUnit').value='g';byId('scaleSubmitBtn').textContent='追加';byId('cancelScaleEdit').classList.add('hidden');
+}
+function resetAdditiveForm(){
+  state.editingAdditiveId=null;byId('additiveForm').reset();byId('additiveSubmitBtn').textContent='追加';byId('cancelAdditiveEdit').classList.add('hidden');
+}
+async function startScaleEdit(id){
+  const s=await S.get('scales',id);if(!s)return;
+  state.editingScaleId=id;byId('scaleName').value=s.name||'';byId('scaleResolution').value=scaleResolutionValue(s).toString();byId('scaleResolutionUnit').value=scaleUnit(s);byId('scaleSubmitBtn').textContent='更新';byId('cancelScaleEdit').classList.remove('hidden');byId('scaleName').focus();
+}
+async function startAdditiveEdit(id){
+  const a=await S.get('additives',id);if(!a)return;
+  state.editingAdditiveId=id;byId('addName').value=a.name||'';byId('addType').value=a.type||'pure';byId('addElement').value=a.mainElement||'';byId('addPct').value=additivePct(a,a.mainElement);byId('addNote').value=a.note||a.maker||'';byId('additiveSubmitBtn').textContent='更新';byId('cancelAdditiveEdit').classList.remove('hidden');byId('addName').focus();
+}
+
+function bindSettings(){
+  const d=state.settings.decimals;byId('setDecMelt').value=d.melt;byId('setDecAddition').value=d.addition;byId('setDecPpm').value=d.ppm;byId('setDecPpb').value=d.ppb;byId('setDecWt').value=d.wt;byId('setDecYield').value=d.yield;
+  const summaryUnit=byId('blendSummaryAdditionUnit');
+  if(summaryUnit){summaryUnit.value=['auto','mg','g','kg','t'].includes(state.settings.summaryAdditionUnit)?state.settings.summaryAdditionUnit:'auto';summaryUnit.addEventListener('change',()=>{state.settings.summaryAdditionUnit=summaryUnit.value;S.saveSettings(state.settings);refreshBlendSummaryDisplay();});}
+  byId('saveSettings').addEventListener('click',()=>{state.settings.decimals={melt:+byId('setDecMelt').value,addition:+byId('setDecAddition').value,ppm:+byId('setDecPpm').value,ppb:+byId('setDecPpb').value,wt:+byId('setDecWt').value,yield:+byId('setDecYield').value};S.saveSettings(state.settings);toast('設定を保存しました。')});
+  byId('restartTutorial').addEventListener('click',()=>AppTutorial.open(true));
+
+  byId('scaleForm').addEventListener('submit',async e=>{e.preventDefault();const name=byId('scaleName').value.trim(),res=byId('scaleResolution').value.trim(),unit=byId('scaleResolutionUnit').value;try{
+    if(!name)throw new Error('名称を入力してください。');if(D.from(res).lte(0))throw new Error('分解能は0より大きくしてください。');
+    const resolutionG=E.massToGram(res,unit);const current=state.editingScaleId?await S.get('scales',state.editingScaleId):null;
+    await S.put('scales',{...(current||{}),id:current?.id||S.uid('scale'),name,resolutionValue:D.from(res).toString(),resolutionUnit:unit,resolutionG:resolutionG.toString(),active:current?.active!==false});
+    const edited=!!current;resetScaleForm();await refreshMasters();toast(edited?'天秤を更新しました。':'天秤を追加しました。');
+  }catch(err){toast(err.message||'天秤の入力内容を確認してください。')}});
+  byId('cancelScaleEdit').addEventListener('click',resetScaleForm);
+
+  byId('additiveForm').addEventListener('submit',async e=>{e.preventDefault();const pct=byId('addPct').value.trim();try{
+    if(D.from(pct).lte(0)||D.from(pct).gt(100))throw new Error('含有率は0より大きく100以下にしてください。');
+    const el=byId('addElement').value.trim(),name=byId('addName').value.trim();if(!el||!name)throw new Error('名称と主元素を入力してください。');
+    const current=state.editingAdditiveId?await S.get('additives',state.editingAdditiveId):null;const type=byId('addType').value;
+    await S.put('additives',{...(current||{}),id:current?.id||S.uid('add'),name,type,mainElement:el,components:[{element:el,wtPercent:D.from(pct).toString()}],purity:type==='pure'?D.from(pct).toString():'',maker:'',partNo:current?.partNo||'',note:byId('addNote').value.trim(),active:current?.active!==false});
+    const edited=!!current;resetAdditiveForm();await refreshMasters();toast(edited?'添加材を更新しました。':'添加材を追加しました。');
+  }catch(err){toast(err.message||'添加材の入力内容を確認してください。')}});
+  byId('cancelAdditiveEdit').addEventListener('click',resetAdditiveForm);
+
+  byId('exportScaleCsv').addEventListener('click',async()=>{const rows=await S.getAll('scales');X.exportCsv(['ID','名称','分解能','単位','分解能_g','有効'],rows.map(x=>[x.id,x.name,scaleResolutionValue(x).toString(),scaleUnit(x),x.resolutionG,x.active!==false?'有効':'無効']),`Al配合計算_天秤マスタ_${X.dateStamp()}.csv`)});
+  byId('exportAdditiveCsv').addEventListener('click',async()=>{const rows=await S.getAll('additives');X.exportCsv(['ID','名称','分類','主元素','含有率_wt%','備考','有効'],rows.map(x=>[x.id,x.name,x.type==='pure'?'純元素':'母合金',x.mainElement,additivePct(x,x.mainElement),x.note||x.maker||'',x.active!==false?'有効':'無効']),`Al配合計算_添加材マスタ_${X.dateStamp()}.csv`)});
+
+  byId('importScaleCsvBtn').addEventListener('click',()=>byId('importScaleCsv').click());
+  byId('importScaleCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreScaleMasterCsv(f);}catch(err){toast('天秤マスタCSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
+  byId('importAdditiveCsvBtn').addEventListener('click',()=>byId('importAdditiveCsv').click());
+  byId('importAdditiveCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreAdditiveMasterCsv(f);}catch(err){toast('添加材マスタCSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
+  byId('importHistoryCsvBtn').addEventListener('click',()=>byId('importHistoryCsv').click());
+  byId('importHistoryCsv').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{await restoreCalculationHistoryCsv(f);}catch(err){toast('計算履歴CSVの復元に失敗しました: '+(err.message||err));}finally{e.target.value='';}});
+
+  byId('exportJson').addEventListener('click',async()=>X.exportJson(await S.exportAll()));
+  byId('exportYieldCsv').addEventListener('click',async()=>{const r=await S.getAll('yieldRecords');X.exportCsv(['日付','元素','添加材','溶湯量_g','添加前_質量分率','添加後_質量分率','添加量_g','歩留まり_%','採用','メモ'],r.map(x=>[x.date,x.element,x.additiveName,x.meltMassG,x.beforeFraction,x.afterFraction,x.additionMassG,D.from(x.yieldFraction).mul(100).toString(),x.adopted!==false?'採用':'除外',x.memo||'']),`Al配合計算_歩留まり実績_${X.dateStamp()}.csv`)});
+  byId('exportHistoryCsv').addEventListener('click',async()=>{const r=await S.getAll('calculationHistory');X.exportCsv(['日時','種類','概要','データJSON'],r.map(x=>[x.date,x.type,x.summary,JSON.stringify(x.payload||{})]),`Al配合計算_計算履歴_${X.dateStamp()}.csv`)});
+  byId('importJson').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());const mode=byId('importMode').value;if(mode==='replace'&&!confirm('全置換すると現在の保存データは削除されます。続行しますか？'))return;await S.importAll(data,mode);state.settings=S.getSettings();await refreshMasters();await renderPresetOptions();await loadYieldRecords();await loadHistory();toast('バックアップを復元しました。')}catch(err){toast('復元に失敗しました: '+err.message)}finally{e.target.value=''}});
+  byId('clearHistory').addEventListener('click',async()=>{if(confirm('計算履歴をすべて削除しますか？')){await S.clear('calculationHistory');loadHistory();toast('履歴を削除しました。')}});
+}
+async function renderMasterTables(){
+  const scales=await S.getAll('scales');
+  byId('scaleRows').innerHTML=scales.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(scaleResolutionText(s))}</td><td><input class="scale-active" data-id="${esc(s.id)}" type="checkbox" ${s.active!==false?'checked':''}></td><td><div class="table-actions"><button class="ghost scale-edit" data-id="${esc(s.id)}">編集</button><button class="ghost scale-delete" data-id="${esc(s.id)}">削除</button></div></td></tr>`).join('');
+  $('.scale-active').forEach(c=>c.addEventListener('change',async()=>{const s=await S.get('scales',c.dataset.id);s.active=c.checked;await S.put('scales',s);refreshMasters()}));
+  $('.scale-edit').forEach(b=>b.addEventListener('click',()=>startScaleEdit(b.dataset.id)));
+  $('.scale-delete').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この天秤を削除しますか？')){if(state.editingScaleId===b.dataset.id)resetScaleForm();await S.remove('scales',b.dataset.id);refreshMasters()}}));
+
+  const adds=await S.getAll('additives');
+  byId('additiveRows').innerHTML=adds.map(a=>`<tr><td>${esc(a.name)}</td><td>${a.type==='pure'?'純元素':'母合金'}</td><td>${esc(a.mainElement)}</td><td>${esc(additivePct(a,a.mainElement))} wt%</td><td>${esc(a.note||a.maker||'')}</td><td><input class="add-active" data-id="${esc(a.id)}" type="checkbox" ${a.active!==false?'checked':''}></td><td><div class="table-actions"><button class="ghost add-edit" data-id="${esc(a.id)}">編集</button><button class="ghost add-delete" data-id="${esc(a.id)}">削除</button></div></td></tr>`).join('');
+  $('.add-active').forEach(c=>c.addEventListener('change',async()=>{const a=await S.get('additives',c.dataset.id);a.active=c.checked;await S.put('additives',a);refreshMasters()}));
+  $('.add-edit').forEach(b=>b.addEventListener('click',()=>startAdditiveEdit(b.dataset.id)));
+  $('.add-delete').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この添加材を削除しますか？')){if(state.editingAdditiveId===b.dataset.id)resetAdditiveForm();await S.remove('additives',b.dataset.id);refreshMasters()}}));
+}
+async function loadHistory(){const rows=(await S.getAll('calculationHistory')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));byId('historyRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${new Date(r.date).toLocaleString('ja-JP')}</td><td>${esc(r.type)}</td><td>${esc(r.summary||'')}</td><td><button class="ghost delete-history" data-id="${esc(r.id)}">削除</button></td></tr>`).join(''):`<tr><td colspan="4" class="muted">履歴はありません。</td></tr>`;$('.delete-history').forEach(b=>b.addEventListener('click',async()=>{await S.remove('calculationHistory',b.dataset.id);loadHistory()}))}
+
+function bindHelp(){
+  document.addEventListener('click',e=>{const h=e.target.closest('[data-help]');if(h){openHelpModal(HELP[h.dataset.help]||'ヘルプ情報がありません。');return}if(e.target.closest('[data-action="open-help"]'))showScreen('help');if(e.target.closest('[data-action="close-modal"]'))closeModal();});
+  byId('modalBackdrop').addEventListener('click',closeModal);
+}
+function openHelpModal(text){byId('helpModalBody').innerHTML=`<p>${esc(text)}</p>`;byId('modalBackdrop').classList.remove('hidden');byId('helpModal').classList.remove('hidden')}
+function closeModal(){byId('helpModal').classList.add('hidden');if(byId('tutorialModal').classList.contains('hidden'))byId('modalBackdrop').classList.add('hidden')}
+
+function setupPWA(){const n=byId('updateNotice');if(n)n.classList.add('hidden')}
+
+async function init(){
+  state.settings=S.getSettings();await S.openDB();await S.seedDefaults();await S.migrateAppData();await refreshMasters();
+  bindNavigation();bindVerify();bindYield();bindDilution();bindSettings();bindHelp();AppTutorial.init();setupPWA();
+  byId('addBlendRow').addEventListener('click',()=>addBlendRow({element:availableElements()[0]||''}));byId('calcBlend').addEventListener('click',calcBlend);byId('saveBlendHistory').addEventListener('click',()=>saveBlendHistory(false));byId('loadBlendSample').addEventListener('click',loadBlendSample);
+  byId('saveBlendPreset').addEventListener('click',saveBlendPreset);byId('applyBlendPreset').addEventListener('click',applyBlendPreset);byId('deleteBlendPreset').addEventListener('click',deleteBlendPreset);
+  addBlendRow({element:availableElements().includes('Cu')?'Cu':(availableElements()[0]||''),additiveId:availableElements().includes('Cu')?'add-5n-cu':'',additivePct:availableElements().includes('Cu')?'99.999':''});
+  // initialize single-form additive selections
+  ['verify','yield'].forEach(prefix=>{const elem=byId(`${prefix}Element`).value;const sel=byId(`${prefix}Additive`);sel.innerHTML=additiveOptions(elem);if(sel.options.length>1){sel.selectedIndex=1;additiveChanged(sel,`${prefix}AdditivePct`,elem)}});
+  showScreen(state.settings.lastScreen||'blend');setTimeout(()=>AppTutorial.open(false),250);
+}
+
+document.addEventListener('DOMContentLoaded',()=>init().catch(e=>{console.error(e);document.body.innerHTML=`<main style="padding:24px;font-family:sans-serif"><h1>起動エラー</h1><pre>${esc(e.stack||e.message)}</pre></main>`}));
+})();
+</script>
+<script data-standalone="js/billet-flow.js">(function(){
+'use strict';
+
+const E=window.CalcEngine;
+const S=window.AppStorage;
+const SETTINGS_KEY='alBlendBilletFlowSettings';
+const OUTPUT_DP=3;
+const PROCESS_DP=6;
+if(!E)return;
+const D=E.Decimal;
+
+const byId=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function required(id,label){const value=String(byId(id)?.value??'').trim();if(!value)throw new Error(`${label}を入力してください。`);return value}
+function positive(value,label){const x=D.from(value);if(x.lte(0))throw new Error(`${label}は0より大きい値を入力してください。`);return x}
+function fmt(v,dp=OUTPUT_DP){return D.from(v).toFixed(dp)}
+function fmtProcess(v,dp=PROCESS_DP){return D.from(v).toFixed(dp).replace(/\.0+$/,'').replace(/(\.\d*?[1-9])0+$/,'$1')}
+function loadSettings(){try{return JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}')||{}}catch{return{}}}
+function saveSettings(){
+  localStorage.setItem(SETTINGS_KEY,JSON.stringify({
+    mode:byId('billetUnitWeightMode')?.value||'theoretical',
+    diameterPreset:byId('billetDiameterPreset')?.value||'145',
+    diameter:byId('billetDiameter')?.value||'145',
+    density:byId('billetDensity')?.value||'2.700',
+    measuredUnitWeight:byId('billetMeasuredUnitWeight')?.value||'',
+    castingSpeed:byId('billetCastingSpeed')?.value||'',
+    billetCount:byId('billetCount')?.value||'1',
+    billetLength:byId('billetLength')?.value||''
+  }));
+}
+
+function panelMarkup(settings){
+  const mode=settings.mode==='measured'?'measured':'theoretical';
+  const preset=['145','178','custom'].includes(String(settings.diameterPreset))?String(settings.diameterPreset):'145';
+  const diameter=settings.diameter||(preset==='178'?'178':'145');
+  return `
+    <div class="panel-heading billet-heading">
+      <div><h2>3. ビレット・流量計算</h2><p class="muted compact-note">ビレット単重 [kg/m]、1本あたり流量 [kg/min]、総流量を計算します。計算過程は教育用に段階表示できます。</p></div>
+    </div>
+    <div class="billet-layout">
+      <div class="billet-inputs">
+        <div class="field-grid billet-field-grid">
+          <label>単重の算出方法<select id="billetUnitWeightMode"><option value="theoretical" ${mode==='theoretical'?'selected':''}>径・密度から計算</option><option value="measured" ${mode==='measured'?'selected':''}>実測単重を使用</option></select></label>
+          <label class="billet-theoretical-field">径プリセット<select id="billetDiameterPreset"><option value="145" ${preset==='145'?'selected':''}>φ145</option><option value="178" ${preset==='178'?'selected':''}>φ178</option><option value="custom" ${preset==='custom'?'selected':''}>手入力</option></select></label>
+          <label class="billet-theoretical-field">ビレット径<div class="input-with-unit"><input id="billetDiameter" type="text" inputmode="decimal" value="${esc(diameter)}"><span>mm</span></div></label>
+          <label class="billet-theoretical-field">密度<div class="input-with-unit"><input id="billetDensity" type="text" inputmode="decimal" value="${esc(settings.density||'2.700')}"><span>g/cm³</span></div></label>
+          <label class="billet-measured-field">実測単重<div class="input-with-unit"><input id="billetMeasuredUnitWeight" type="text" inputmode="decimal" value="${esc(settings.measuredUnitWeight||'')}"><span>kg/m</span></div></label>
+          <label>鋳造速度<div class="input-with-unit"><input id="billetCastingSpeed" type="text" inputmode="decimal" value="${esc(settings.castingSpeed||'120')}"><span>mm/min</span></div></label>
+          <label>鋳造本数<div class="input-with-unit"><input id="billetCount" type="number" inputmode="numeric" min="1" step="1" value="${esc(settings.billetCount||'1')}"><span>本</span></div></label>
+          <label>ビレット長さ（任意）<div class="input-with-unit"><input id="billetLength" type="text" inputmode="decimal" value="${esc(settings.billetLength||'')}"><span>mm</span></div></label>
+        </div>
+        <div class="message muted billet-measured-field">実測単重には実径、密度、寸法差などの影響が含まれるため、流量計算では実態に近い値になる場合があります。</div>
+        <div class="button-row"><button id="calcBilletFlow" class="primary" type="button">計算</button></div>
+        <div id="billetFlowMessage" class="message muted">条件を入力して計算してください。</div>
+      </div>
+      <div class="billet-results">
+        <div class="summary-grid billet-summary-grid" aria-live="polite">
+          <div><span>ビレット単重</span><strong id="billetUnitWeightResult">—</strong></div>
+          <div><span>1本あたり流量</span><strong id="billetFlowResult">—</strong></div>
+          <div><span>総流量</span><strong id="billetTotalFlowResult">—</strong></div>
+          <div id="billetOneWeightCard" class="hidden"><span>1本重量</span><strong id="billetOneWeightResult">—</strong></div>
+          <div id="billetTotalWeightCard" class="hidden"><span>全本重量</span><strong id="billetTotalWeightResult">—</strong></div>
+        </div>
+      </div>
+    </div>
+    <details id="billetCalcDetails" class="formula-details billet-details hidden"><summary>計算過程を表示</summary><pre id="billetCalcProcess" class="billet-process"></pre></details>`;
+}
+
+function injectPanel(){
+  if(byId('billetFlowPanel'))return;
+  const blend=byId('screen-blend');if(!blend)return;
+  const panel=document.createElement('section');panel.id='billetFlowPanel';panel.className='panel billet-flow-panel';panel.innerHTML=panelMarkup(loadSettings());
+  const detail=byId('blendDetailPanel');detail?blend.insertBefore(panel,detail):blend.appendChild(panel);
+}
+function syncMode(){const measured=byId('billetUnitWeightMode').value==='measured';document.querySelectorAll('.billet-theoretical-field').forEach(el=>el.classList.toggle('hidden',measured));document.querySelectorAll('.billet-measured-field').forEach(el=>el.classList.toggle('hidden',!measured))}
+function syncDiameterPreset(){const p=byId('billetDiameterPreset').value;if(p==='145'||p==='178')byId('billetDiameter').value=p;saveSettings()}
+function syncPresetFromDiameter(){const d=String(byId('billetDiameter').value).trim();byId('billetDiameterPreset').value=d==='145'?'145':d==='178'?'178':'custom'}
+function resetResults(){
+  ['billetUnitWeightResult','billetFlowResult','billetTotalFlowResult','billetOneWeightResult','billetTotalWeightResult'].forEach(id=>{const el=byId(id);if(el)el.textContent='—'});
+  byId('billetOneWeightCard')?.classList.add('hidden');byId('billetTotalWeightCard')?.classList.add('hidden');byId('billetCalcDetails')?.classList.add('hidden');
+}
+
+function buildProcessText({mode,unitInfo,unitWeight,flow,total,weight,diameter,density,measured,speed,count,length}){
+  const lines=[];
+  if(mode==='theoretical'){
+    const radius=diameter.div(2,48),volumeMm3=unitInfo.areaMm2.mul(1000),massG=unitInfo.volumeCm3PerM.mul(density);
+    lines.push('【1. ビレット断面積】',`直径 D = ${fmtProcess(diameter)} mm`,`半径 r = D ÷ 2 = ${fmtProcess(radius)} mm`,'断面積 A = π × r² = π × D² ÷ 4',`= ${fmtProcess(unitInfo.areaMm2)} mm²`,'');
+    lines.push('【2. 1 mあたりの体積】','長さ 1 m = 1,000 mm',`体積 V = A × 1,000 = ${fmtProcess(volumeMm3)} mm³`,'1 cm³ = 1,000 mm³ なので',`V = ${fmtProcess(unitInfo.volumeCm3PerM)} cm³`,'');
+    lines.push('【3. ビレット単重】',`密度 ρ = ${fmtProcess(density)} g/cm³`,`質量 = V × ρ = ${fmtProcess(massG)} g`,`= ${fmtProcess(unitWeight)} kg`,`ビレット単重 = ${fmtProcess(unitWeight)} kg/m`);
+  }else{
+    lines.push('【1. 実測単重】',`実測単重 = ${fmtProcess(measured)} kg/m`,'実測値には実径、密度、寸法差などの影響が含まれます。');
+  }
+  const flowStep=mode==='theoretical'?4:2,totalStep=mode==='theoretical'?5:3,weightStep=mode==='theoretical'?6:4;
+  lines.push('',`【${flowStep}. 1本あたりの鋳造流量】`,`鋳造速度 = ${fmtProcess(speed)} mm/min`,`= ${fmtProcess(flow.speedMPerMin)} m/min`,'流量 = 単重 × 鋳造速度',`= ${fmtProcess(unitWeight)} kg/m × ${fmtProcess(flow.speedMPerMin)} m/min`,`= ${fmtProcess(flow.flowKgPerMin)} kg/min`);
+  lines.push('',`【${totalStep}. 総流量】`,`鋳造本数 = ${fmtProcess(count,0)} 本`,`総流量 = ${fmtProcess(flow.flowKgPerMin)} × ${fmtProcess(count,0)}`,`= ${fmtProcess(total.totalFlowKgPerMin)} kg/min`);
+  if(weight){
+    lines.push('',`【${weightStep}. ビレット重量】`,`ビレット長さ = ${fmtProcess(length)} mm = ${fmtProcess(weight.billetLengthM)} m`,`1本重量 = 単重 × 長さ`,`= ${fmtProcess(unitWeight)} kg/m × ${fmtProcess(weight.billetLengthM)} m`,`= ${fmtProcess(weight.oneBilletWeightKg)} kg`,`全${fmtProcess(count,0)}本重量 = ${fmtProcess(weight.oneBilletWeightKg)} × ${fmtProcess(count,0)}`,`= ${fmtProcess(weight.totalBilletWeightKg)} kg`);
+  }
+  lines.push('','【単位の考え方】','kg/m は「長さ1 mあたりの質量」です。','kg/m × m/min とすると m が約分され、kg/min（1分あたりの質量）になります。');
+  return lines.join('\n');
+}
+
+async function persistHistory(payload,summary){
+  if(!S||typeof S.put!=='function'||typeof S.uid!=='function')return;
+  await S.put('calculationHistory',{id:S.uid('calc'),date:new Date().toISOString(),type:'ビレット・流量',summary,payload});
+}
+
+async function calculate(){
+  const message=byId('billetFlowMessage');
+  try{
+    const mode=byId('billetUnitWeightMode').value;
+    const speed=positive(required('billetCastingSpeed','鋳造速度'),'鋳造速度');
+    const count=positive(required('billetCount','鋳造本数'),'鋳造本数');
+    if(!Number.isSafeInteger(Number(count.toString())))throw new Error('鋳造本数は1以上の整数を入力してください。');
+    const lengthText=String(byId('billetLength').value||'').trim();const length=lengthText?positive(lengthText,'ビレット長さ'):null;
+    let diameter=null,density=null,measured=null,unitInfo=null,unitWeight;
+    if(mode==='theoretical'){
+      diameter=positive(required('billetDiameter','ビレット径'),'ビレット径');density=positive(required('billetDensity','密度'),'密度');
+      unitInfo=E.calculateBilletUnitWeight({diameterMm:diameter,densityGPerCm3:density});unitWeight=unitInfo.unitWeightKgPerM;
+    }else{
+      measured=positive(required('billetMeasuredUnitWeight','実測単重'),'実測単重');unitWeight=measured;
+    }
+    const flow=E.calculateBilletFlow({unitWeightKgPerM:unitWeight,castingSpeedMmPerMin:speed});
+    const total=E.calculateTotalCastingFlow({flowKgPerMin:flow.flowKgPerMin,billetCount:count});
+    const weight=length?E.calculateBilletWeight({unitWeightKgPerM:unitWeight,billetLengthMm:length,billetCount:count}):null;
+    const processText=buildProcessText({mode,unitInfo,unitWeight,flow,total,weight,diameter,density,measured,speed,count,length});
+    byId('billetUnitWeightResult').textContent=`${fmt(unitWeight)} kg/m`;byId('billetFlowResult').textContent=`${fmt(flow.flowKgPerMin)} kg/min`;byId('billetTotalFlowResult').textContent=`${fmt(total.totalFlowKgPerMin)} kg/min`;
+    if(weight){byId('billetOneWeightCard').classList.remove('hidden');byId('billetTotalWeightCard').classList.remove('hidden');byId('billetOneWeightResult').textContent=`${fmt(weight.oneBilletWeightKg)} kg`;byId('billetTotalWeightResult').textContent=`${fmt(weight.totalBilletWeightKg)} kg`}else{byId('billetOneWeightCard').classList.add('hidden');byId('billetTotalWeightCard').classList.add('hidden')}
+    byId('billetCalcProcess').textContent=processText;byId('billetCalcDetails').classList.remove('hidden');message.className='message success';message.textContent='計算完了。下の「計算過程を表示」から式と単位変換を確認できます。';saveSettings();
+    const payload={mode,diameterMm:diameter?.toString()||null,densityGPerCm3:density?.toString()||null,measuredUnitWeightKgPerM:measured?.toString()||null,unitWeightKgPerM:unitWeight.toString(),castingSpeedMmPerMin:speed.toString(),billetCount:count.toString(),billetLengthMm:length?.toString()||null,oneBilletFlowKgPerMin:flow.flowKgPerMin.toString(),totalFlowKgPerMin:total.totalFlowKgPerMin.toString(),oneBilletWeightKg:weight?.oneBilletWeightKg.toString()||null,totalBilletWeightKg:weight?.totalBilletWeightKg.toString()||null,processText};
+    const identity=mode==='theoretical'?`φ${fmtProcess(diameter)} mm`:`実測単重 ${fmtProcess(unitWeight)} kg/m`;const summary=`${identity} / ${fmtProcess(speed)} mm/min / ${fmtProcess(count,0)}本: ${fmt(total.totalFlowKgPerMin)} kg/min`;
+    try{await persistHistory(payload,summary)}catch{message.className='message warning';message.textContent='計算結果は有効ですが、計算履歴の保存に失敗しました。'}
+  }catch(e){resetResults();message.className='message error';message.textContent=e.message||String(e)}
+}
+
+function injectHelp(){
+  const toc=document.querySelector('#helpContent .help-toc'),article=document.querySelector('#helpContent article');if(!toc||!article||byId('h-billet-flow'))return;
+  const link=document.createElement('a');link.href='#h-billet-flow';link.textContent='ビレット単重・流量';const formulaLink=toc.querySelector('a[href="#h-formulas"]');formulaLink?toc.insertBefore(link,formulaLink):toc.appendChild(link);
+  const box=document.createElement('div');box.innerHTML='<h2 id="h-billet-flow">ビレット単重・鋳造流量</h2><p>径・密度から理論単重を求める方法と、実測単重を直接使用する方法を選べます。径プリセットはφ145 / φ178、密度の初期値は2.700 g/cm³です。</p><pre>単重 [kg/m] = (π × D² / 4) × ρ / 1000\n1本流量 [kg/min] = 単重 [kg/m] × 鋳造速度 [mm/min] / 1000\n総流量 [kg/min] = 1本流量 × 鋳造本数\n1本重量 [kg] = 単重 [kg/m] × ビレット長さ [mm] / 1000</pre><p>Dはビレット径[mm]、ρは密度[g/cm³]です。「計算過程を表示」では断面積、体積、単位変換から順に確認できます。</p>';
+  const formulas=byId('h-formulas');formulas?article.insertBefore(box,formulas):article.appendChild(box);
+}
+function bind(){
+  byId('billetUnitWeightMode').addEventListener('change',()=>{syncMode();saveSettings()});byId('billetDiameterPreset').addEventListener('change',syncDiameterPreset);byId('billetDiameter').addEventListener('input',syncPresetFromDiameter);byId('calcBilletFlow').addEventListener('click',calculate);
+  ['billetDiameter','billetDensity','billetMeasuredUnitWeight','billetCastingSpeed','billetCount','billetLength'].forEach(id=>byId(id)?.addEventListener('change',saveSettings));
+}
+function init(){injectPanel();if(!byId('billetFlowPanel'))return;syncMode();bind();injectHelp()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+</body>
+</html>
