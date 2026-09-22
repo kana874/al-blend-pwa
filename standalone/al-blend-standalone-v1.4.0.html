@@ -1163,7 +1163,7 @@ Y = [C1*(M+x) - M*C0] / (x*P)</pre><p>M: 初期溶湯重量、C0: 初期濃度�
 'use strict';
 const E=window.CalcEngine, D=E.Decimal, S=window.AppStorage, X=window.AppExport;
 const state={additives:[],scales:[],settings:null,lastBlend:null,lastVerify:null,lastYield:null,lastDilution:null,editingScaleId:null,editingAdditiveId:null};
-const $=s=>document.querySelector(s), $=s=>Array.from(document.querySelectorAll(s));
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
 const byId=id=>document.getElementById(id);
 const HELP={
   meltMass:'配合開始時点のAl溶湯重量です。g / kg / tから選択できます。',
@@ -1244,11 +1244,11 @@ function additiveOptions(element='',selected=''){
 }
 function renderAllAdditiveSelects(){
   ['verifyAdditive','yieldAdditive'].forEach(id=>{const sel=byId(id);const p=sel.value;const elem=byId(id==='verifyAdditive'?'verifyElement':'yieldElement').value;sel.innerHTML=additiveOptions(elem,p);if(state.additives.some(a=>a.id===p))sel.value=p;});
-  $('.element-card').forEach(card=>updateRowAdditives(card));
+  $$('.element-card').forEach(card=>updateRowAdditives(card));
 }
 function fillElementSelects(){
   ['verifyElement','yieldElement','yieldFilterElement'].forEach(id=>{const s=byId(id);if(!s)return;const cur=s.value;s.innerHTML=elementOptions(cur,id==='yieldFilterElement');if(cur&&availableElements().includes(cur))s.value=cur;});
-  $('.element-card').forEach(card=>{const sel=card.querySelector('.row-element');const cur=sel.value;sel.innerHTML=elementOptions(cur);if(cur&&availableElements().includes(cur))sel.value=cur;});
+  $$('.element-card').forEach(card=>{const sel=card.querySelector('.row-element');const cur=sel.value;sel.innerHTML=elementOptions(cur);if(cur&&availableElements().includes(cur))sel.value=cur;});
 }
 function additiveChanged(sel,pctId,element){const a=state.additives.find(x=>x.id===sel.value);if(a)byId(pctId).value=additivePct(a,element||a.mainElement)}
 
@@ -1262,7 +1262,7 @@ async function renderPresetOptions(){
   if(rows.some(r=>r.id===cur))sel.value=cur;
 }
 function captureBlendPresetData(){
-  const rows=$('.element-card').map(card=>({
+  const rows=$$('.element-card').map(card=>({
     element:card.querySelector('.row-element').value,
     currentUnit:card.querySelector('.row-current-unit').value,
     target:card.querySelector('.row-target').value.trim(),
@@ -1323,12 +1323,12 @@ async function deleteBlendPreset(){
 }
 
 function showScreen(name){
-  $('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));
-  $('.nav-btn[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id===`screen-${name}`));
+  $$('.nav-btn[data-screen]').forEach(b=>b.classList.toggle('active',b.dataset.screen===name));
   state.settings.lastScreen=name;S.saveSettings(state.settings);window.scrollTo({top:0,behavior:'smooth'});
   if(name==='yield')loadYieldRecords(); if(name==='data'){renderMasterTables();loadHistory();}
 }
-function bindNavigation(){ $('.nav-btn[data-screen]').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen))); }
+function bindNavigation(){ $$('.nav-btn[data-screen]').forEach(b=>b.addEventListener('click',()=>showScreen(b.dataset.screen))); }
 
 let rowSeq=0;
 function addBlendRow(preset={}){
@@ -1350,7 +1350,7 @@ function addBlendRow(preset={}){
   byId('blendRows').appendChild(div);
   updateRowAdditives(div,preset.additiveId);
   if(preset.yieldSource)div.querySelector('.row-yield-source').value=preset.yieldSource;
-  div.querySelector('.remove-row').addEventListener('click',()=>{if($('.element-card').length>1)div.remove();else toast('最低1元素は必要です。')});
+  div.querySelector('.remove-row').addEventListener('click',()=>{if($$('.element-card').length>1)div.remove();else toast('最低1元素は必要です。')});
   div.querySelector('.row-element').addEventListener('change',()=>{div.querySelector('.row-additive-pct').value='';updateRowAdditives(div)});
   div.querySelector('.row-additive').addEventListener('change',()=>{
     const a=state.additives.find(x=>x.id===div.querySelector('.row-additive').value);if(a)div.querySelector('.row-additive-pct').value=additivePct(a,div.querySelector('.row-element').value);
@@ -1374,7 +1374,7 @@ async function resolveYieldForCard(card,notify=false){
   const avg=records.reduce((s,r)=>s+Number(r.yieldFraction),0)/records.length;card.querySelector('.row-yield').value=String(avg*100);if(notify)toast(`${records.length}件の平均歩留まりを反映しました。`);return card.querySelector('.row-yield').value;
 }
 async function collectBlendRows(){
-  const cards=$('.element-card');const rows=[];
+  const cards=$$('.element-card');const rows=[];
   for(const card of cards){
     await resolveYieldForCard(card,false);
     const element=card.querySelector('.row-element').value.trim();if(!element||!availableElements().includes(element))throw new Error('元素は添加材マスタの主元素からドロップダウンで選択してください。');
@@ -1629,9 +1629,9 @@ async function loadYieldRecords(){
   let rows=await S.getAll('yieldRecords');const f=byId('yieldFilterElement').value;if(f)rows=rows.filter(r=>r.element===f);rows.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   const adopted=rows.filter(r=>r.adopted!==false).map(r=>Number(r.yieldFraction)*100).filter(Number.isFinite);const stats=calcStats(adopted);byId('yieldStats').innerHTML=[['件数',stats.n],['平均',stats.n?stats.avg.toFixed(getDecimals().yield)+' %':'—'],['中央値',stats.n?stats.median.toFixed(getDecimals().yield)+' %':'—'],['最小',stats.n?stats.min.toFixed(getDecimals().yield)+' %':'—'],['最大',stats.n?stats.max.toFixed(getDecimals().yield)+' %':'—'],['標準偏差',stats.n?stats.sd.toFixed(getDecimals().yield)+' %':'—']].map(x=>`<div class="stat"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
   byId('yieldRecordRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.element)}</td><td>${esc(r.additiveName||'')}</td><td>${fmtYield(r.yieldFraction)}</td><td><input class="adopt-yield" data-id="${esc(r.id)}" type="checkbox" ${r.adopted!==false?'checked':''}></td><td>${esc(r.memo||'')}</td><td><button class="secondary use-yield" data-id="${esc(r.id)}">配合に使用</button> <button class="ghost delete-yield" data-id="${esc(r.id)}">削除</button></td></tr>`).join(''):`<tr><td colspan="7" class="muted">実績はありません。</td></tr>`;
-  $('.adopt-yield').forEach(c=>c.addEventListener('change',async()=>{const r=await S.get('yieldRecords',c.dataset.id);r.adopted=c.checked;await S.put('yieldRecords',r);loadYieldRecords()}));
-  $('.delete-yield').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この実績を削除しますか？')){await S.remove('yieldRecords',b.dataset.id);loadYieldRecords()}}));
-  $('.use-yield').forEach(b=>b.addEventListener('click',async()=>{const r=await S.get('yieldRecords',b.dataset.id);if(!availableElements().includes(r.element)){toast(`元素「${r.element}」は現在の添加材マスタにありません。主元素を登録してから使用してください。`);return;}setSelectedYield(`${r.element}|${r.additiveId}`,r);showScreen('blend');let card=$('.element-card').find(c=>c.querySelector('.row-element').value===r.element);if(!card)card=addBlendRow({element:r.element,additiveId:r.additiveId});card.querySelector('.row-element').value=r.element;updateRowAdditives(card,r.additiveId);card.querySelector('.row-yield-source').value='record';card.querySelector('.row-yield').value=D.from(r.yieldFraction).mul(100).toString();toast('選択した歩留まり実績を配合計算へ反映しました。')}));
+  $$('.adopt-yield').forEach(c=>c.addEventListener('change',async()=>{const r=await S.get('yieldRecords',c.dataset.id);r.adopted=c.checked;await S.put('yieldRecords',r);loadYieldRecords()}));
+  $$('.delete-yield').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この実績を削除しますか？')){await S.remove('yieldRecords',b.dataset.id);loadYieldRecords()}}));
+  $$('.use-yield').forEach(b=>b.addEventListener('click',async()=>{const r=await S.get('yieldRecords',b.dataset.id);if(!availableElements().includes(r.element)){toast(`元素「${r.element}」は現在の添加材マスタにありません。主元素を登録してから使用してください。`);return;}setSelectedYield(`${r.element}|${r.additiveId}`,r);showScreen('blend');let card=$$('.element-card').find(c=>c.querySelector('.row-element').value===r.element);if(!card)card=addBlendRow({element:r.element,additiveId:r.additiveId});card.querySelector('.row-element').value=r.element;updateRowAdditives(card,r.additiveId);card.querySelector('.row-yield-source').value='record';card.querySelector('.row-yield').value=D.from(r.yieldFraction).mul(100).toString();toast('選択した歩留まり実績を配合計算へ反映しました。')}));
 }
 function calcStats(a){if(!a.length)return{n:0,avg:0,median:0,min:0,max:0,sd:0};const s=[...a].sort((x,y)=>x-y);const n=s.length,avg=s.reduce((x,y)=>x+y,0)/n,median=n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2,sd=Math.sqrt(s.reduce((x,y)=>x+(y-avg)**2,0)/n);return{n,avg,median,min:s[0],max:s[n-1],sd}}
 
@@ -1798,17 +1798,17 @@ function bindSettings(){
 async function renderMasterTables(){
   const scales=await S.getAll('scales');
   byId('scaleRows').innerHTML=scales.map(s=>`<tr><td>${esc(s.name)}</td><td>${esc(scaleResolutionText(s))}</td><td><input class="scale-active" data-id="${esc(s.id)}" type="checkbox" ${s.active!==false?'checked':''}></td><td><div class="table-actions"><button class="ghost scale-edit" data-id="${esc(s.id)}">編集</button><button class="ghost scale-delete" data-id="${esc(s.id)}">削除</button></div></td></tr>`).join('');
-  $('.scale-active').forEach(c=>c.addEventListener('change',async()=>{const s=await S.get('scales',c.dataset.id);s.active=c.checked;await S.put('scales',s);refreshMasters()}));
-  $('.scale-edit').forEach(b=>b.addEventListener('click',()=>startScaleEdit(b.dataset.id)));
-  $('.scale-delete').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この天秤を削除しますか？')){if(state.editingScaleId===b.dataset.id)resetScaleForm();await S.remove('scales',b.dataset.id);refreshMasters()}}));
+  $$('.scale-active').forEach(c=>c.addEventListener('change',async()=>{const s=await S.get('scales',c.dataset.id);s.active=c.checked;await S.put('scales',s);refreshMasters()}));
+  $$('.scale-edit').forEach(b=>b.addEventListener('click',()=>startScaleEdit(b.dataset.id)));
+  $$('.scale-delete').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この天秤を削除しますか？')){if(state.editingScaleId===b.dataset.id)resetScaleForm();await S.remove('scales',b.dataset.id);refreshMasters()}}));
 
   const adds=await S.getAll('additives');
   byId('additiveRows').innerHTML=adds.map(a=>`<tr><td>${esc(a.name)}</td><td>${a.type==='pure'?'純元素':'母合金'}</td><td>${esc(a.mainElement)}</td><td>${esc(additivePct(a,a.mainElement))} wt%</td><td>${esc(a.note||a.maker||'')}</td><td><input class="add-active" data-id="${esc(a.id)}" type="checkbox" ${a.active!==false?'checked':''}></td><td><div class="table-actions"><button class="ghost add-edit" data-id="${esc(a.id)}">編集</button><button class="ghost add-delete" data-id="${esc(a.id)}">削除</button></div></td></tr>`).join('');
-  $('.add-active').forEach(c=>c.addEventListener('change',async()=>{const a=await S.get('additives',c.dataset.id);a.active=c.checked;await S.put('additives',a);refreshMasters()}));
-  $('.add-edit').forEach(b=>b.addEventListener('click',()=>startAdditiveEdit(b.dataset.id)));
-  $('.add-delete').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この添加材を削除しますか？')){if(state.editingAdditiveId===b.dataset.id)resetAdditiveForm();await S.remove('additives',b.dataset.id);refreshMasters()}}));
+  $$('.add-active').forEach(c=>c.addEventListener('change',async()=>{const a=await S.get('additives',c.dataset.id);a.active=c.checked;await S.put('additives',a);refreshMasters()}));
+  $$('.add-edit').forEach(b=>b.addEventListener('click',()=>startAdditiveEdit(b.dataset.id)));
+  $$('.add-delete').forEach(b=>b.addEventListener('click',async()=>{if(confirm('この添加材を削除しますか？')){if(state.editingAdditiveId===b.dataset.id)resetAdditiveForm();await S.remove('additives',b.dataset.id);refreshMasters()}}));
 }
-async function loadHistory(){const rows=(await S.getAll('calculationHistory')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));byId('historyRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${new Date(r.date).toLocaleString('ja-JP')}</td><td>${esc(r.type)}</td><td>${esc(r.summary||'')}</td><td><button class="ghost delete-history" data-id="${esc(r.id)}">削除</button></td></tr>`).join(''):`<tr><td colspan="4" class="muted">履歴はありません。</td></tr>`;$('.delete-history').forEach(b=>b.addEventListener('click',async()=>{await S.remove('calculationHistory',b.dataset.id);loadHistory()}))}
+async function loadHistory(){const rows=(await S.getAll('calculationHistory')).sort((a,b)=>String(b.date).localeCompare(String(a.date)));byId('historyRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${new Date(r.date).toLocaleString('ja-JP')}</td><td>${esc(r.type)}</td><td>${esc(r.summary||'')}</td><td><button class="ghost delete-history" data-id="${esc(r.id)}">削除</button></td></tr>`).join(''):`<tr><td colspan="4" class="muted">履歴はありません。</td></tr>`;$$('.delete-history').forEach(b=>b.addEventListener('click',async()=>{await S.remove('calculationHistory',b.dataset.id);loadHistory()}))}
 
 function bindHelp(){
   document.addEventListener('click',e=>{const h=e.target.closest('[data-help]');if(h){openHelpModal(HELP[h.dataset.help]||'ヘルプ情報がありません。');return}if(e.target.closest('[data-action="open-help"]'))showScreen('help');if(e.target.closest('[data-action="close-modal"]'))closeModal();});
